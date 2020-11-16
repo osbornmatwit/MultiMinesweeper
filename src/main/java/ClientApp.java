@@ -46,7 +46,6 @@ public class ClientApp extends Application {
                 //set numerical values to the tiles
                 if ( bombs > 0 )
                     tile.text.setText( String.valueOf( bombs ) ) ;
-
             }
         }
 
@@ -89,6 +88,9 @@ public class ClientApp extends Application {
             this.hasBomb = hasBomb;
 
             border.setStroke(Color.LIGHTGRAY);
+
+            //set text color
+            text.setFill(Color.WHITE);
 
             // set bombs to have "X"
             text.setText(hasBomb ? "X" : "");
