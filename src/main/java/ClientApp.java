@@ -27,17 +27,22 @@ public class ClientApp extends Application {
         Pane root = new Pane();
         root.setPrefSize(WIDTH, HEIGHT);
 
-        for (int y=0; y <  Y_TILES; y++){
-            for (int x = 0; x < X_TILES; x++){
-                Tile tile = new Tile(x,y,Math.random() < 0.2);
+        for (int y = 0; y < Y_TILES; y++) {
+            for (int x = 0; x < X_TILES; x++) {
+                Tile tile = new Tile(x, y, Math.random() < 0.2);
 
                 grid[x][y] = tile;
                 root.getChildren().add(tile);
             }
         }
-        for (int y=0; y <  Y_TILES; y++){
-            for (int x = 0; x < X_TILES; x++){
-             Tile tile = grid[x][y];
+        for (int y = 0; y < Y_TILES; y++) {
+            for (int x = 0; x < X_TILES; x++) {
+                Tile tile = grid[x][y];
+
+                // obtain stream of elements and filter them
+                long bombs = getNeighbors(tile).stream()
+                        .filter(t -> t.hasBomb)
+                        .count();
 
             }
         }
@@ -45,12 +50,12 @@ public class ClientApp extends Application {
         return root;
     }
 
-    private List<Tile> getNeighbors(Tile tile){
+    private List<Tile> getNeighbors(Tile tile) {
         List<Tile> neighbors = new ArrayList<>();
 
-        int[] points = new int[] { -1, -1, -1, 0, -1, 1, 0, -1, 1, -1, 1, 0, 1, 1 } ;
+        int[] points = new int[]{-1, -1, -1, 0, -1, 1, 0, -1, 1, -1, 1, 0, 1, 1};
 
-        for (int i =0; i < points.length; i++){
+        for (int i = 0; i < points.length; i++) {
             int dx = points[i];
             int dy = points[++i];
 
@@ -60,9 +65,8 @@ public class ClientApp extends Application {
 
             //check if new x & y are valid
             // replace with method... is valid point...
-            if ( ( newX >= 0 && newX < X_TILES ) && ( newY >= 0 && newY < Y_TILES ) )
-            {
-                neighbors.add( this.grid[ newX ][ newY ] ) ;
+            if ((newX >= 0 && newX < X_TILES) && (newY >= 0 && newY < Y_TILES)) {
+                neighbors.add(this.grid[newX][newY]);
             }
         }
 
@@ -70,14 +74,14 @@ public class ClientApp extends Application {
     }
 
     private class Tile extends StackPane {
-        private int x,y;
+        private int x, y;
         private boolean hasBomb;
         private int bombs = 0;
 
-        private Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE -2);
+        private Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE - 2);
         private Text text = new Text();
 
-        public Tile(int x, int y, boolean hasBomb){
+        public Tile(int x, int y, boolean hasBomb) {
             this.x = x;
             this.y = y;
             this.hasBomb = hasBomb;
@@ -87,7 +91,7 @@ public class ClientApp extends Application {
             // set bombs to have "X"
             text.setText(hasBomb ? "X" : "");
 
-            getChildren().addAll(border,text);
+            getChildren().addAll(border, text);
 
             setTranslateX(x * TILE_SIZE);
             setTranslateY(y * TILE_SIZE);
@@ -96,10 +100,10 @@ public class ClientApp extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-    Scene scene = new Scene(createContent());
+        Scene scene = new Scene(createContent());
 
-    stage.setScene(scene);
-    stage.show();
+        stage.setScene(scene);
+        stage.show();
     }
 
     public static void main(String[] args) {
