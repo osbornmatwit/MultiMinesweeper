@@ -48,7 +48,18 @@ public class ClientApp extends Application {
     private List<Tile> getNeighbors(Tile tile){
         List<Tile> neighbors = new ArrayList<>();
 
-        return neighbors
+        int[] points = new int[] { -1, -1, -1, 0, -1, 1, 0, -1, 1, -1, 1, 0, 1, 1 } ;
+
+        for (int i =0; i < points.length; i++){
+            int dx = points[i];
+            int dy = points[++i];
+
+            int newX = tile.x + dx;
+            int newY = tile.y + dy;
+
+        }
+
+        return neighbors;
     }
 
     private class Tile extends StackPane {
