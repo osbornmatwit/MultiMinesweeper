@@ -86,18 +86,18 @@ public class Server {
     }
 
 
-    public static void main( String arg[] ) throws Exception
-    {
-        @SuppressWarnings( "resource" )
-        ServerSocket listenSocket = new ServerSocket( 1234 ) ;
+    public static void main() throws Exception {
+        @SuppressWarnings("resource")
+        ServerSocket listenSocket = new ServerSocket(1234);
 
-        System.out.println( "This server is ready to receive" ) ;
+        System.out.println("This server is ready to receive");
 
-        while ( true )
-        {
 
-            @SuppressWarnings( "resource" )
-            Socket connectionSocket = listenSocket.accept() ;
+        //noinspection InfiniteLoopStatement
+        while (true) {
+
+            @SuppressWarnings("resource")
+            Socket connectionSocket = listenSocket.accept();
 
             // Step 2
             // Create a thread object
