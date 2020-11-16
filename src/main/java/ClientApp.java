@@ -4,6 +4,9 @@ import javafx.scene.Scene;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+
 public class ClientApp extends Application {
 
     private static final int TILE_SIZE = 40;
@@ -23,10 +26,15 @@ public class ClientApp extends Application {
     private class Tile extends StackPane {
         private int x,y;
         private boolean hasBomb;
+
+        private Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE -2);
+
         public Tile(int x, int y, boolean hasBomb){
             this.x = x;
             this.y = y;
             this.hasBomb = hasBomb;
+
+            border.setStroke(Color.LIGHTGRAY);
         }
     }
 
