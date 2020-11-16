@@ -8,6 +8,9 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ClientApp extends Application {
 
     private static final int TILE_SIZE = 40;
@@ -27,10 +30,25 @@ public class ClientApp extends Application {
         for (int y=0; y <  Y_TILES; y++){
             for (int x = 0; x < X_TILES; x++){
                 Tile tile = new Tile(x,y,Math.random() < 0.2);
+
+                grid[x][y] = tile;
+                root.getChildren().add(tile);
+            }
+        }
+        for (int y=0; y <  Y_TILES; y++){
+            for (int x = 0; x < X_TILES; x++){
+             Tile tile = grid[x][y];
+
             }
         }
 
         return root;
+    }
+
+    private List<Tile> getNeighbors(Tile tile){
+        List<Tile> neighbors = new ArrayList<>();
+
+        return neighbors
     }
 
     private class Tile extends StackPane {
