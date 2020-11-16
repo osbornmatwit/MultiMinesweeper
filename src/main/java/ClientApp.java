@@ -22,6 +22,7 @@ public class ClientApp extends Application {
 
     //declare grid
     private Tile[][] grid = new Tile[X_TILES][Y_TILES];
+    private Scene scene;
 
     private Parent createContent() {
         Pane root = new Pane();
@@ -112,6 +113,13 @@ public class ClientApp extends Application {
             if (isOpen)
                 return;
 
+            //end game
+            if(hasBomb){
+                System.out.println("Game OVer");
+                scene.setRoot( createContent() ) ;
+                return;
+            }
+
             isOpen = true;
             text.setVisible(true);
             border.setFill(null);
@@ -124,9 +132,9 @@ public class ClientApp extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        Scene scene = new Scene(createContent());
+         this.scene = new Scene(createContent());
 
-        stage.setScene(scene);
+        stage.setScene(this.scene);
         stage.show();
     }
 
