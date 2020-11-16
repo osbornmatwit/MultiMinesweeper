@@ -1,6 +1,7 @@
 import javafx.application.Application;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.scene.layout.Pane;
 public class ClientApp extends Application {
@@ -17,6 +18,16 @@ public class ClientApp extends Application {
         root.setPrefSize(800, 600);
 
         return root;
+    }
+
+    private class Tile extends StackPane {
+        private int x,y;
+        private boolean hasBomb;
+        public Tile(int x, int y, boolean hasBomb){
+            this.x = x;
+            this.y = y;
+            this.hasBomb = hasBomb;
+        }
     }
 
     @Override
