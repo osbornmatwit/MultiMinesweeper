@@ -82,6 +82,7 @@ public class ClientApp extends Application {
     private class Tile extends StackPane {
         private int x, y;
         private boolean hasBomb;
+        private boolean isOpen = false;
 
         private Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE - 2);
         private Text text = new Text();
@@ -97,9 +98,10 @@ public class ClientApp extends Application {
             text.setFill(Color.WHITE);
             //set font size
             this.text.setFont( Font.font( 18 ) ) ;
-
             // set bombs to have "X"
             text.setText(hasBomb ? "X" : "");
+            //text not visible to user
+            text.setVisible(false);
 
             getChildren().addAll(border, text);
 
