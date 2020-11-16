@@ -5,6 +5,13 @@ import javafx.stage.Stage;
 import javafx.scene.layout.Pane;
 public class ClientApp extends Application {
 
+    private static final int TILE_SIZE = 40;
+    private static final int WIDTH = 800;
+    private static final int HEIGHT = 600;
+
+    private static final int X_TILES = WIDTH / TILE_SIZE;
+    private static final int Y_TILES = HEIGHT / TILE_SIZE;
+
     private Parent createContent() {
         Pane root = new Pane();
         root.setPrefSize(800, 600);
