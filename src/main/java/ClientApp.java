@@ -7,7 +7,7 @@ import javafx.stage.Stage;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-
+import javafx.scene.text.Font ;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +38,10 @@ public class ClientApp extends Application {
         for (int y = 0; y < Y_TILES; y++) {
             for (int x = 0; x < X_TILES; x++) {
                 Tile tile = grid[x][y];
+
+                if (tile.hasBomb){
+                    continue;
+                }
 
                 // obtain stream of elements and filter them
                 long bombs = getNeighbors(tile).stream()
@@ -91,6 +95,8 @@ public class ClientApp extends Application {
 
             //set text color
             text.setFill(Color.WHITE);
+            //set font size
+            this.text.setFont( Font.font( 18 ) ) ;
 
             // set bombs to have "X"
             text.setText(hasBomb ? "X" : "");
