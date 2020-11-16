@@ -105,6 +105,8 @@ public class ClientApp extends Application {
 
             setTranslateX(x * TILE_SIZE);
             setTranslateY(y * TILE_SIZE);
+
+            setOnMouseClicked(event -> open());
         }
         public void open(){
             if (isOpen)
@@ -113,6 +115,10 @@ public class ClientApp extends Application {
             isOpen = true;
             text.setVisible(true);
             border.setFill(null);
+
+            if(text.getText().isEmpty()){
+                getNeighbors(this).forEach(Tile::open);
+            }
         }
     }
 
