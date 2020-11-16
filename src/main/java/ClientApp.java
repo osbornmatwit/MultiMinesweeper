@@ -54,9 +54,16 @@ public class ClientApp extends Application {
             int dx = points[i];
             int dy = points[++i];
 
+            // neighbors X & y coordinate
             int newX = tile.x + dx;
             int newY = tile.y + dy;
 
+            //check if new x & y are valid
+            // replace with method... is valid point...
+            if ( ( newX >= 0 && newX < X_TILES ) && ( newY >= 0 && newY < Y_TILES ) )
+            {
+                neighbors.add( this.grid[ newX ][ newY ] ) ;
+            }
         }
 
         return neighbors;
