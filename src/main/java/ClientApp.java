@@ -43,6 +43,9 @@ public class ClientApp extends Application {
                 long bombs = getNeighbors(tile).stream()
                         .filter(t -> t.hasBomb)
                         .count();
+                //set numerical values to the tiles
+                if ( bombs > 0 )
+                    tile.text.setText( String.valueOf( bombs ) ) ;
 
             }
         }
@@ -76,7 +79,6 @@ public class ClientApp extends Application {
     private class Tile extends StackPane {
         private int x, y;
         private boolean hasBomb;
-        private int bombs = 0;
 
         private Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE - 2);
         private Text text = new Text();
