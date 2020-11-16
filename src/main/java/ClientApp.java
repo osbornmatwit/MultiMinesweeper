@@ -94,8 +94,6 @@ public class ClientApp extends Application {
 
             border.setStroke(Color.LIGHTGRAY);
 
-            //set text color
-            text.setFill(Color.WHITE);
             //set font size
             this.text.setFont( Font.font( 18 ) ) ;
             // set bombs to have "X"
@@ -107,6 +105,14 @@ public class ClientApp extends Application {
 
             setTranslateX(x * TILE_SIZE);
             setTranslateY(y * TILE_SIZE);
+        }
+        public void open(){
+            if (isOpen)
+                return;
+
+            isOpen = true;
+            text.setVisible(true);
+            border.setFill(null);
         }
     }
 
