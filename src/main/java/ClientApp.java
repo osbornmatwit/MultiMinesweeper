@@ -17,9 +17,18 @@ public class ClientApp extends Application {
     private static final int X_TILES = WIDTH / TILE_SIZE;
     private static final int Y_TILES = HEIGHT / TILE_SIZE;
 
+    //declare grid
+    private Tile[][] grid = new Tile[X_TILES][Y_TILES];
+
     private Parent createContent() {
         Pane root = new Pane();
-        root.setPrefSize(800, 600);
+        root.setPrefSize(WIDTH, HEIGHT);
+
+        for (int y=0; y <  Y_TILES; y++){
+            for (int x = 0; x < X_TILES; x++){
+                Tile tile = new Tile(x,y,Math.random() < 0.2);
+            }
+        }
 
         return root;
     }
@@ -27,6 +36,7 @@ public class ClientApp extends Application {
     private class Tile extends StackPane {
         private int x,y;
         private boolean hasBomb;
+        private int bombs = 0;
 
         private Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE -2);
         private Text text = new Text();
