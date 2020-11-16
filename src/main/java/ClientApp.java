@@ -2,6 +2,7 @@ import javafx.application.Application;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.StackPane;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -28,6 +29,7 @@ public class ClientApp extends Application {
         private boolean hasBomb;
 
         private Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE -2);
+        private Text text = new Text();
 
         public Tile(int x, int y, boolean hasBomb){
             this.x = x;
@@ -35,6 +37,14 @@ public class ClientApp extends Application {
             this.hasBomb = hasBomb;
 
             border.setStroke(Color.LIGHTGRAY);
+
+            // set bombs to have "X"
+            text.setText(hasBomb ? "X" : "");
+
+            getChildren().addAll(border,text);
+
+            setTranslateX(x * TILE_SIZE);
+            setTranslateY(y * TILE_SIZE);
         }
     }
 
