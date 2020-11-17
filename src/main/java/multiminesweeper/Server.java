@@ -1,3 +1,5 @@
+package multiminesweeper;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -5,10 +7,8 @@ import java.util.Scanner;
 
 public class Server {
 
-    static class Client implements Runnable
-    {
+    static class Client implements Runnable {
         Socket connectionSocket;
-
 
 
         public Client(Socket socket) {
@@ -16,20 +16,17 @@ public class Server {
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             // DONE
-            try
-            {
+            try {
                 process();
-            }
-            catch ( IOException e )
-            {
+            } catch (IOException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace() ;
+                e.printStackTrace();
             }
 
         }
+
         private void process() throws IOException {
 
             // Get a reference to the socket's input and output streams.
@@ -52,32 +49,28 @@ public class Server {
             // File Name
             String fileName = list[ 1 ].substring( 1 ) ;
 
-            try
-            {
+            try {
 
-                File file = new File( fileName ) ;
-                Scanner sc = new Scanner( file ) ;
-                outToClient.writeBytes( "HTTP/1.1 200 OK\r\n" ) ;
-                outToClient.writeBytes( "Content-Type: text/html\r\n\r\n" ) ;
+                File file = new File(fileName);
+                Scanner sc = new Scanner(file);
+                outToClient.writeBytes("HTTP/1.1 200 OK\r\n");
+                outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
 
-                while ( sc.hasNextLine() )
-                {
-                    String str = sc.nextLine() ;
-                    outToClient.writeBytes( str + "\r\n" ) ;
+                while (sc.hasNextLine()) {
+                    String str = sc.nextLine();
+                    outToClient.writeBytes(str + "\r\n");
                 }// end while
 
             }// end try
-            catch ( Exception e )
-            {
-                File error = new File( "C:\\Users\\padillah\\OneDrive - Wentworth Institute of Technology\\Eclipse Workspaces\\Sophmore Year\\Web Server\\Error.html" ) ;
-                Scanner sc = new Scanner( error ) ;
-                outToClient.writeBytes( "HTTP/1.1 404 Not Found\r\n" ) ;
-                outToClient.writeBytes( "Content-Type: text/html\r\n\r\n" ) ;
+            catch (Exception e) {
+                File error = new File("C:\\Users\\padillah\\OneDrive - Wentworth Institute of Technology\\Eclipse Workspaces\\Sophmore Year\\Web Server\\Error.html");
+                Scanner sc = new Scanner(error);
+                outToClient.writeBytes("HTTP/1.1 404 Not Found\r\n");
+                outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
 
-                while ( sc.hasNextLine() )
-                {
-                    String str = sc.nextLine() ;
-                    outToClient.writeBytes( str + "\r\n" ) ;
+                while (sc.hasNextLine()) {
+                    String str = sc.nextLine();
+                    outToClient.writeBytes(str + "\r\n");
                 }// end while
             }// end catch
 
@@ -90,7 +83,7 @@ public class Server {
         @SuppressWarnings("resource")
         ServerSocket listenSocket = new ServerSocket(1234);
 
-        System.out.println("This server is ready to receive");
+        System.out.println("This  is ready to receive");
 
 
         //noinspection InfiniteLoopStatement

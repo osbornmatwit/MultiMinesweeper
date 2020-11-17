@@ -1,13 +1,16 @@
+package multiminesweeper;
+
 import javafx.application.Application;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
-import javafx.scene.text.Text;
-import javafx.stage.Stage;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font ;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,8 +49,8 @@ public class ClientApp extends Application {
 
                 // obtain stream of elements and filter them
                 long bombs = getNeighbors(tile).stream()
-                        .filter(t -> t.hasBomb)
-                        .count();
+                    .filter(t -> t.hasBomb)
+                    .count();
                 //set numerical values to the tiles
                 if ( bombs > 0 )
                     tile.text.setText( String.valueOf( bombs ) ) ;
@@ -109,6 +112,7 @@ public class ClientApp extends Application {
 
             setOnMouseClicked(event -> open());
         }
+
         public void open(){
             if (isOpen)
                 return;
@@ -132,7 +136,7 @@ public class ClientApp extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-         this.scene = new Scene(createContent());
+        this.scene = new Scene(createContent());
 
         stage.setScene(this.scene);
         stage.show();
