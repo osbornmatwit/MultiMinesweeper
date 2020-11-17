@@ -1,4 +1,4 @@
-# multiminesweeper.message.Message format reference
+# Message format reference
 The basic format is `type:data` sent over a DataOutputStream.
 Each message should be with writeUTF and read with readUTF.
 
