@@ -16,4 +16,4 @@ javafx {
     modules = [ 'javafx.controls', 'javafx.fxml' ]
 }
 
-mainClassName = 'ClientApp'
+mainClassName = 'multiminesweeper.ClientApp'

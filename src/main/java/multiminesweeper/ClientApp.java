@@ -11,6 +11,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import javax.swing.text.Position;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class ClientApp extends Application {
     private static final int Y_TILES = HEIGHT / TILE_SIZE;
 
     //declare grid
-    private Tile[][] grid = new Tile[X_TILES][Y_TILES];
+    private final Tile[][] grid = new Tile[X_TILES][Y_TILES];
     private Scene scene;
 
     private Parent createContent() {
@@ -84,12 +85,13 @@ public class ClientApp extends Application {
     }
 
     private class Tile extends StackPane {
-        private int x, y;
-        private boolean hasBomb;
+        private final int x;
+        private final int y;
+        private final boolean hasBomb;
         private boolean isOpen = false;
 
-        private Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE - 2);
-        private Text text = new Text();
+        private final Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE - 2);
+        private final Text text = new Text();
 
         public Tile(int x, int y, boolean hasBomb) {
             this.x = x;
@@ -119,7 +121,7 @@ public class ClientApp extends Application {
 
             //end game
             if(hasBomb){
-                System.out.println("Game OVer");
+                System.out.println("Game Over");
                 scene.setRoot( createContent() ) ;
                 return;
             }
@@ -134,8 +136,18 @@ public class ClientApp extends Application {
         }
     }
 
+    public class Minefield {
+        public Position[] mines;
+        public Position startingPosition;
+        // Constructors
+        public Minefield(Position[] mines, Position startingPosition) {
+            this.mines = mines;
+            this.startingPosition = startingPosition;
+        }
+    }
+
     @Override
-    public void start(Stage stage) throws Exception {
+    public void start(Stage stage) {
         this.scene = new Scene(createContent());
 
         stage.setScene(this.scene);
