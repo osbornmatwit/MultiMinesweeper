@@ -1,14 +1,16 @@
 package multiminesweeper.message;
 
-public class Message {
-    public final String message;
-    public final String[] parts;
+import java.io.Serializable;
+
+public class Message implements Serializable {
     public final MessageType type;
 
-    public Message(String message) {
-        this.message = message;
-        type = MessageType.fromString(message.split(":", 2)[0]);
-        parts = message.split(":", type.partCount);
+    public Message(MessageType type) {
+        this.type = type;
     }
 
+    @Override
+    public String toString() {
+        return type.toString();
+    }
 }

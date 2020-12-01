@@ -2,29 +2,30 @@ package multiminesweeper.connector.events;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.function.Consumer;
 
-class MultiplayerEventDispatcher {
-    private HashMap<MultiplayerEventType, ArrayList<MultiplayerEventListener>> eventListeners = new HashMap<>();
+public class MultiplayerEventDispatcher {
+    private final HashMap<EventType, ArrayList<Consumer<MultiplayerEvent>>> eventListeners = new HashMap<>();
 
     public MultiplayerEventDispatcher() {
         // populate hashmap
-        for (MultiplayerEventType type : MultiplayerEventType.values()) {
+        for (EventType type : EventType.values()) {
             eventListeners.put(type, new ArrayList<>());
         }
     }
 
-    public void addEventListener(MultiplayerEventType type, MultiplayerEventListener listener) {
+    public void addEventListener(EventType type, Consumer<MultiplayerEvent> listener) {
         eventListeners.get(type).add(listener);
     }
 
-    public boolean removeEventListener(MultiplayerEventType type, MultiplayerEventListener listener) {
+    public boolean removeEventListener(EventType type, Consumer<MultiplayerEvent> listener) {
         return eventListeners.get(type).remove(listener);
     }
 
-    public void triggerEvent(MultiplayerEventType type, String data) {
-        var listeners = eventListeners.get(type);
+    public void triggerEvent(MultiplayerEvent event) {
+        var listeners = eventListeners.get(event.type);
         for (var listener : listeners) {
-            listener.onEvent(data);
+            listener.accept(event);
         }
     }
 }

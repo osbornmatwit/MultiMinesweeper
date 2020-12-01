@@ -1,7 +1,10 @@
 package multiminesweeper.server.relay;
 
+import multiminesweeper.message.ConnectionRequestMessage;
+import multiminesweeper.message.DisconnectMessage;
+import multiminesweeper.message.Message;
+
 import java.io.IOException;
-import java.io.UTFDataFormatException;
 
 class ClientHandler implements Runnable {
     public Thread thread;
@@ -20,28 +23,42 @@ class ClientHandler implements Runnable {
         try {
             loop();
         } catch (IOException ex) {
-            server.unexpectedClose(client);
+            server.unexpectedClose(client, "Network error");
+        } catch (ClassNotFoundException ex) {
+            System.err.printf("ClassNotFoundException in client connection: %s%n", ex);
+            try {
+                client.sendError("Invalid data sent");
+            } catch (IOException ignored) {
+            }
+            server.unexpectedClose(client, "Misbehaving client");
         }
     }
 
-    public void loop() throws IOException {
+    public void loop() throws IOException, ClassNotFoundException {
         while (true) {
             if (client.closed) return;
-            try {
-                String message = client.inputStream.readUTF();
-                // client asked us to close the connection
-                if (message.startsWith("system:")) {
-                    if (message.startsWith("system:close")) {
-                        server.requestedClose(client);
-                    }
-                } else if (message.startsWith("system:tryFindPartner")) {
-                    boolean result = server.findPartner(client);
-                    server.sendResult(client, result);
+
+            System.out.println("waiting for object");
+            Message outerMessage = client.getMessage();
+
+            System.out.println(outerMessage);
+
+            // client asked us to close the connection
+            if (outerMessage instanceof DisconnectMessage) {
+                DisconnectMessage message = (DisconnectMessage) outerMessage;
+                server.requestedClose(client, message.reason);
+            } else if (outerMessage instanceof ConnectionRequestMessage) {
+                ConnectionRequestMessage request = (ConnectionRequestMessage) outerMessage;
+
+                boolean result = server.findPartner(client);
+                if (result || !request.blocking) {
+                    server.sendResult(client, "connection request", result);
                 } else {
-                    server.sendToOther(client, message);
+                    // a client that wants to wait for another
+                    server.waitForPartner(client);
                 }
-            } catch (UTFDataFormatException data) {
-                client.sendMessage("system", "badMessage");
+            } else {
+                server.sendToOther(client, outerMessage);
             }
         }
     }
