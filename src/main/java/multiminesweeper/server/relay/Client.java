@@ -10,26 +10,28 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.UUID;
 
 public class Client {
-    public Socket socket;
     public final ObjectInputStream inputStream;
     public final ObjectOutputStream outputStream;
+    public Socket socket;
     public UUID uuid;
     public boolean paired = false;
     public volatile boolean closed = false;
+    // user defined settings for viable partners
+    public String password = "";
+    private final HashMap<String, String> metadata = new HashMap<>();
 
     public Client(UUID uuid, Socket clientSocket) throws IOException {
-        // TODO: Use setObjectInputFilter on inputStream to proactively stop non-messages from being sent
-        System.out.println("Creating Client");
         this.uuid = uuid;
         socket = clientSocket;
         // must create output stream first, otherwise it will deadlock
         outputStream = new ObjectOutputStream(socket.getOutputStream());
         inputStream = new ObjectInputStream(socket.getInputStream());
 
-        System.out.println("Client Created");
+        System.out.println("Created " + this.toString());
     }
 
     public Client(String uuid, Socket clientSocket) throws IOException {
@@ -80,5 +82,23 @@ public class Client {
             socket.close();
         } catch (Exception ignored) {
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Client {" + uuid + "}";
+    }
+
+    public boolean filterRequirements(Client other) {
+        // can't partner with self, need to have matching passwords (or lack thereof)
+        return this != other && password.equals(other.password);
+    }
+
+    public String setMetadata(String property, String value) {
+        return metadata.put(property, value);
+    }
+
+    public String getMetadata(String property) {
+        return metadata.get(property);
     }
 }

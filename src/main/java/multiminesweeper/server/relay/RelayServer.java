@@ -8,9 +8,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.WeakHashMap;
-
+// TODO: Handle SocketErrors more gracefully
 /**
  * Connects clients together and passes messages back and forth between them.
  */
@@ -24,28 +25,43 @@ public class RelayServer {
     public static void main(String[] args) {
         RelayServer server = new RelayServer();
         int port = 8080;
+        Runtime.getRuntime().addShutdownHook(new Thread(server::closeAll));
         server.listen(port);
+    }
+
+    private void closeAll() {
+        for (var client : clients) {
+            requestedClose(client, "Server Closed");
+        }
     }
 
     @SuppressWarnings("InfiniteLoopStatement")
     public void listen(int port) {
         try {
             serverSocket = new ServerSocket(port);
-            System.out.println("Server listening on port " + port);
-            while (true) {
-                Socket newSocket = serverSocket.accept();
-                System.out.println("Client connected");
-                Client client = createClient(newSocket);
-                System.out.println("Client accepted");
-                new Thread(new ClientHandler(this, client)).start();
-            }
         } catch (IOException ex) {
             System.err.println("Failed to open socket");
+            return;
         }
+        System.out.println("Server listening on port " + port);
+        while (true) {
+            Client client;
+            try {
+                Socket newSocket = serverSocket.accept();
+                System.out.println("Client connected");
+                client = createClient(newSocket);
+                System.out.println("Client accepted");
+            } catch (IOException ex) {
+                System.err.println("Error Connecting to client");
+                continue;
+            }
+            new Thread(new ClientHandler(this, client), client.toString()).start();
+        }
+
     }
 
     /**
-     * Get a client by it's uuid
+     * Get a client by its' uuid
      * @param uuid UUID to get client for
      * @return Client, if one is found, {@code null} if not.
      */
@@ -56,7 +72,7 @@ public class RelayServer {
     /**
      * Create a client from a socket connection
      * @param clientConnection The connection to create a client from
-     * @throws IOException If creating the client fails.
+     * @throws IOException If creating the client fails, always before it's added to any data structures
      */
     public Client createClient(Socket clientConnection) throws IOException {
         Client newClient = new Client(clientConnection);
@@ -73,19 +89,25 @@ public class RelayServer {
     }
 
     public boolean findPartner(Client client) throws IOException {
-        if (waitingList.size() < 1) {
-            return false;
-        } else {
-            pairClients(client, waitingList.remove(0));
+        // find a partner that matches client requirements (see Client.filterRequirements)
+
+        // Returns an Optional containing nothing or a client matching the requirements
+        Optional<Client> maybePartner = waitingList.stream().filter(client::filterRequirements).findFirst();
+
+        if (maybePartner.isPresent()) {
+            Client partner = maybePartner.get();
+            waitingList.remove(partner);
+            waitingList.remove(client);
+            pairClients(client, partner);
             return true;
+        } else {
+            return false;
         }
     }
 
     public void waitForPartner(Client client) throws IOException {
-        if (findPartner(client)) {
-            return;
-        }
         waitingList.add(client);
+        findPartner(client);
     }
 
     /**

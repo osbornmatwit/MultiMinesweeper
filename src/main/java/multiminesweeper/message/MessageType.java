@@ -8,5 +8,6 @@ public enum MessageType {
     CHAT,
     RESULT,
     INFO_QUERY,
+    CHANGE_INFO,
     MOVE
 }

@@ -1,15 +1,49 @@
 package multiminesweeper.connector;
 
+import multiminesweeper.Move;
+import multiminesweeper.connector.events.EventDispatcher;
 import multiminesweeper.connector.events.EventType;
+import multiminesweeper.connector.events.MoveResult;
 import multiminesweeper.connector.events.MultiplayerEvent;
-import multiminesweeper.connector.events.MultiplayerEventDispatcher;
+import multiminesweeper.message.InfoChangeMessage;
 import multiminesweeper.message.Message;
+import multiminesweeper.message.MoveMessage;
+import multiminesweeper.message.result.MoveResultMessage;
+import multiminesweeper.message.result.ResultMessage;
 
 import java.io.IOException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public abstract class AbstractConnector {
-    final MultiplayerEventDispatcher dispatcher = new MultiplayerEventDispatcher();
+    final EventDispatcher dispatcher = new EventDispatcher();
+    private String name;
+
+    AbstractConnector(String name) {
+        this.name = name;
+    }
+
+    // tries to change the name on both this end and on the other end
+    public boolean setName(String newName) {
+        if (!hasPartner()) {
+            name = newName;
+            return true;
+        }
+
+        try {
+            sendMessage(new InfoChangeMessage("name", newName));
+            name = newName;
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public abstract String getPartnerName() throws IOException;
 
     /**
      * Try and find a partner, return true if found, false if not
@@ -30,6 +64,7 @@ public abstract class AbstractConnector {
 
     public abstract void sendChat(String message) throws IOException;
 
+
     /**
      * Checks if the connection was previously open
      * @return True if the connection was closed for some reason, false if it hasn't been opened, or if it hasn't been closed
@@ -44,8 +79,24 @@ public abstract class AbstractConnector {
         return dispatcher.removeEventListener(type, listener);
     }
 
+    public void setMoveHandler(Function<Move, MoveResult> handler) {
+        dispatcher.setMoveHandler(handler);
+    }
+
+    public boolean hasMoveHandler() {
+        return dispatcher.hasMoveHandler();
+    }
+
     void sendEvent(Message message) {
         dispatcher.triggerEvent(new MultiplayerEvent(message));
     }
 
+    abstract void sendMessage(Message message) throws IOException;
+
+    abstract ResultMessage sendAndWait(Message message) throws IOException;
+
+    public MoveResult sendMove(Move move) throws IOException {
+
+        return ((MoveResultMessage) sendAndWait(new MoveMessage(move))).result;
+    }
 }

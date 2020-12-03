@@ -22,6 +22,10 @@ public class ConnectionMessage extends Message {
 
     @Override
     public String toString() {
-        return String.format("Connected to %s at %s", name, partnerAddress);
+        if (partnerAddress == null) {
+            return String.format("Connected to %s through relay", name);
+        } else {
+            return String.format("Connected to %s at %s", name, partnerAddress);
+        }
     }
 }

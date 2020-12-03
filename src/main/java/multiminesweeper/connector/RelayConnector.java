@@ -2,25 +2,32 @@ package multiminesweeper.connector;
 
 import multiminesweeper.message.*;
 import multiminesweeper.message.result.BooleanResultMessage;
+import multiminesweeper.message.result.ResultMessage;
+import multiminesweeper.message.result.StringResultMessage;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 
 /**
  * Connects the client to another through a server, with the server always acting in between the clients
  */
 public class RelayConnector extends AbstractConnector implements Runnable {
-    private boolean hasPartner = false;
-    private boolean closed = false;
     private final Socket socket;
     private final ObjectInputStream inputStream;
     private final ObjectOutputStream outputStream;
-
+    // Array blocking queue has to have capacity and will limit based on that
+    private final BlockingQueue<ResultMessage> resultQueue = new LinkedBlockingQueue<>();
+    private boolean hasPartner = false;
+    private boolean closed = false;
+    private ConnectionMessage connectionInfo;
 
     public RelayConnector(String host, int port) throws IOException {
+        super("");
         socket = new Socket(host, port);
         outputStream = new ObjectOutputStream(socket.getOutputStream());
         inputStream = new ObjectInputStream(socket.getInputStream());
@@ -37,12 +44,13 @@ public class RelayConnector extends AbstractConnector implements Runnable {
 
     @SuppressWarnings("InfiniteLoopStatement")
     public void loop() throws IOException {
-        while (true) {
-            Message message;
-            synchronized (inputStream) {
+        synchronized (inputStream) {
+            while (true) {
+                Message message;
                 message = getMessage();
+                handleMessage(message);
+                inputStream.notifyAll();
             }
-            handleMessage(message);
         }
     }
 
@@ -61,19 +69,21 @@ public class RelayConnector extends AbstractConnector implements Runnable {
                 break;
             case INIT_CONNECTION:
                 System.out.println(message);
+                connectionInfo = (ConnectionMessage) message;
                 sendEvent(message);
                 break;
             case CHAT:
                 System.out.println("Chat message: " + message);
                 sendEvent(message);
                 break;
-            case INFO_QUERY:
-            case MOVE:
-                throw new UnsupportedOperationException("Haven't coded this part yet ;)");
             case RESULT:
-                // shouldn't be caught by generic handler, should be caught by whoever used it
-                System.err.println("Unexpected result");
-                close();
+                resultQueue.add((ResultMessage) message);
+                break;
+            case INFO_QUERY:
+            case CHANGE_INFO:
+                throw new UnsupportedOperationException("Info requests are handled by the server here");
+            case MOVE:
+                sendEvent(message);
                 break;
             case CONNECTION_REQUEST:
                 System.err.println("Server event received on client");
@@ -94,45 +104,62 @@ public class RelayConnector extends AbstractConnector implements Runnable {
     }
 
     @Override
+    public String getPartnerName() throws IOException {
+        return ((StringResultMessage) sendAndWait(new QueryMessage("name"))).result;
+    }
+
+    @Override
     public boolean tryFindPartner() {
-        // TODO: Refactor this so that instead of waiting for a response, these methods simply trigger the server to send a connection request
-        // lock the input stream so that this is the only thing waiting for a response
-        synchronized (inputStream) {
-            try {
-                sendObject(new ConnectionRequestMessage());
-                Message response = getMessage();
-                if (!(response instanceof BooleanResultMessage)) {
-                    // maybe change this to run event handler instead
-                    throw new RuntimeException("Didn't get boolean response from client request");
-                }
-                boolean result = ((BooleanResultMessage) response).result;
-                if (result) {
-                    hasPartner = true;
-                }
-                return result;
-            } catch (IOException ignored) {
+        if (hasPartner) throw new IllegalStateException("Already have a partner!");
+        try {
+            Message response = sendAndWait(new ConnectionRequestMessage(getName()));
+            if (!(response instanceof BooleanResultMessage)) {
+                // maybe change this to run event handler instead
+                throw new RuntimeException("Didn't get boolean response from client request");
             }
+            boolean result = ((BooleanResultMessage) response).result;
+            if (result) {
+                hasPartner = true;
+            }
+            return result;
+        } catch (IOException ex) {
             return false;
         }
     }
 
     @Override
     public void waitForPartner() {
-        synchronized (inputStream) {
-            try {
-                sendObject(new ConnectionRequestMessage(true));
-                while (!hasPartner) {
-                    Message message = getMessage();
-                    if (message instanceof ConnectionMessage) {
-                        hasPartner = true;
-                    } else {
-                        handleMessage(message);
-                    }
-                }
-            } catch (IOException ex) {
-                close();
+        try {
+            ConnectionRequestMessage newConnection = new ConnectionRequestMessage(getName(), "", true);
+            sendMessage(newConnection);
+            synchronized (inputStream) {
+                // wait for an message to come in
+                inputStream.wait();
+                // the response gets stored in connectionInfo
+//                System.out.println(connectionInfo);
+                hasPartner = true;
             }
+        } catch (IOException ex) {
+            close();
+        } catch (InterruptedException ex) {
+            System.err.println("Wait for partner interrupted");
         }
+    }
+
+    /**
+     * Send a message than wait for a response that is of type wantedType
+     * @param message The message to send
+     * @return A message of the type asked for
+     * @throws IOException If theres an exception in sending the message
+     */
+    // then wait for a response that matches the wantedType
+    ResultMessage sendAndWait(Message message) throws IOException {
+        sendMessage(message);
+        // uses blocking queue
+        // after adding blocking queue, I added a notify() call on inputStream in loop(), so you can use that instead
+        // see waitForPartner
+        // but for now, I'll use this still
+        return resultQueue.poll();
     }
 
     @Override
@@ -147,13 +174,13 @@ public class RelayConnector extends AbstractConnector implements Runnable {
 
     @Override
     public void sendChat(String message) throws IOException {
-        sendObject(new StringMessage(MessageType.CHAT, message));
+        sendMessage(new StringMessage(MessageType.CHAT, message));
     }
 
-    private void sendObject(Object object) throws IOException {
+    void sendMessage(Message message) throws IOException {
         System.out.println("Writing message");
         synchronized (outputStream) {
-            outputStream.writeObject(object);
+            outputStream.writeObject(message);
         }
     }
 

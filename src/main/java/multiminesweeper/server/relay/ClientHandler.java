@@ -1,8 +1,6 @@
 package multiminesweeper.server.relay;
 
-import multiminesweeper.message.ConnectionRequestMessage;
-import multiminesweeper.message.DisconnectMessage;
-import multiminesweeper.message.Message;
+import multiminesweeper.message.*;
 
 import java.io.IOException;
 
@@ -10,6 +8,7 @@ class ClientHandler implements Runnable {
     public Thread thread;
     private final RelayServer server;
     private final Client client;
+    public boolean logActivity = false;
 
     ClientHandler(RelayServer server, Client client) {
         this.server = server;
@@ -23,6 +22,7 @@ class ClientHandler implements Runnable {
         try {
             loop();
         } catch (IOException ex) {
+            ex.printStackTrace();
             server.unexpectedClose(client, "Network error");
         } catch (ClassNotFoundException ex) {
             System.err.printf("ClassNotFoundException in client connection: %s%n", ex);
@@ -38,10 +38,10 @@ class ClientHandler implements Runnable {
         while (true) {
             if (client.closed) return;
 
-            System.out.println("waiting for object");
+            logMessage("waiting for object");
             Message outerMessage = client.getMessage();
 
-            System.out.println(outerMessage);
+            logMessage(outerMessage.toString());
 
             // client asked us to close the connection
             if (outerMessage instanceof DisconnectMessage) {
@@ -49,6 +49,9 @@ class ClientHandler implements Runnable {
                 server.requestedClose(client, message.reason);
             } else if (outerMessage instanceof ConnectionRequestMessage) {
                 ConnectionRequestMessage request = (ConnectionRequestMessage) outerMessage;
+                // Set client requirements here
+                client.password = request.password;
+                client.setMetadata("name", request.name);
 
                 boolean result = server.findPartner(client);
                 if (result || !request.blocking) {
@@ -57,9 +60,22 @@ class ClientHandler implements Runnable {
                     // a client that wants to wait for another
                     server.waitForPartner(client);
                 }
+            } else if (outerMessage instanceof InfoChangeMessage) {
+                InfoChangeMessage message = (InfoChangeMessage) outerMessage;
+                client.setMetadata(message.property, message.value);
+            } else if (outerMessage instanceof QueryMessage) {
+                String result = client.getMetadata(((QueryMessage) outerMessage).property);
+                // RESULT CAN BE NULL
+                client.sendResult("QueryResult", result);
             } else {
                 server.sendToOther(client, outerMessage);
             }
+        }
+    }
+
+    private void logMessage(String message) {
+        if (logActivity) {
+            System.out.println(client.toString() + ": " + message);
         }
     }
 }

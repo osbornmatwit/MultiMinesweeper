@@ -28,11 +28,6 @@ public class MultiplayerEvent {
             case CHAT:
                 data = ((StringMessage) message).message;
                 break;
-            case MOVE:
-                MoveMessage move = ((MoveMessage) message);
-                // have to send it this way because can't have sum types easily :(
-                data = String.format("(%d, %d)", move.x, move.y);
-                break;
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }
@@ -49,8 +44,6 @@ public class MultiplayerEvent {
                 return EventType.DISCONNECT;
             case CHAT:
                 return EventType.CHAT;
-            case MOVE:
-                return EventType.MOVE;
             default:
                 return null;
         }

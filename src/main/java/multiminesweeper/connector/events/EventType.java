@@ -4,8 +4,8 @@ public enum EventType {
     CONNECT,
     DISCONNECT,
     CHAT,
-    MOVE,
-    ERROR, /*
+    ERROR, /*,
+    // these types are handled separately
     MOVE_RESULT,
-    PARTNER_FOUND, */
+    MOVE */
 }
