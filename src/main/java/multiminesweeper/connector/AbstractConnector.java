@@ -18,9 +18,22 @@ import java.util.function.Function;
 public abstract class AbstractConnector {
     final EventDispatcher dispatcher = new EventDispatcher();
     private String name;
+    public boolean debug = false;
 
     AbstractConnector(String name) {
         this.name = name;
+    }
+
+    public void debugPrint(String value) {
+        if (debug) {
+            System.err.print(value);
+        }
+    }
+
+    public void debugPrintln(String value) {
+        if (debug) {
+            System.err.println(value);
+        }
     }
 
     // tries to change the name on both this end and on the other end

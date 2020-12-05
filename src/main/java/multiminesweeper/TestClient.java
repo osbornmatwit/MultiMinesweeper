@@ -5,7 +5,6 @@ import multiminesweeper.connector.events.EventType;
 import multiminesweeper.connector.events.MoveResult;
 
 import java.io.IOException;
-import java.util.Random;
 import java.util.Scanner;
 
 class TestClient {
@@ -24,7 +23,7 @@ class TestClient {
         connector.addEventListener(EventType.ERROR, event -> System.err.println("Error message: " + event.data));
         connector.setMoveHandler(move -> {
             System.out.println("Move: " + move);
-            return new Random().nextBoolean() ? MoveResult.HIT : MoveResult.MISS;
+            return MoveResult.HIT;
         });
 
         new Thread(connector).start();
@@ -45,6 +44,7 @@ class TestClient {
             String[] command = input.split(" ", 2);
             switch (command[0]) {
                 case "chat":
+                    if (command.length < 2) break;
                     connector.sendChat(command[1]);
                     break;
                 case "exit":
@@ -60,19 +60,16 @@ class TestClient {
     static void runMove() throws IOException {
         System.out.print("Input x position: ");
         int x = scanner.nextInt();
-        System.out.println();
 
         System.out.print("Input y position: ");
         int y = scanner.nextInt();
-        System.out.println();
 
         System.out.print("Input flag state (true/false): ");
         boolean flag = scanner.nextBoolean();
-        System.out.println();
 
+        System.out.println("Sending move...");
         var result = connector.sendMove(new Move(x, y, flag));
         System.out.printf("Move result: %s%n", result);
 
-        System.out.println("Sending move...");
     }
 }

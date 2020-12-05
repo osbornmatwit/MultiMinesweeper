@@ -1,7 +1,10 @@
 package multiminesweeper.connector;
 
+import multiminesweeper.Move;
+import multiminesweeper.connector.events.MoveResult;
 import multiminesweeper.message.*;
 import multiminesweeper.message.result.BooleanResultMessage;
+import multiminesweeper.message.result.MoveResultMessage;
 import multiminesweeper.message.result.ResultMessage;
 import multiminesweeper.message.result.StringResultMessage;
 
@@ -44,14 +47,14 @@ public class RelayConnector extends AbstractConnector implements Runnable {
 
     @SuppressWarnings("InfiniteLoopStatement")
     public void loop() throws IOException {
-        synchronized (inputStream) {
             while (true) {
                 Message message;
                 message = getMessage();
                 handleMessage(message);
-                inputStream.notifyAll();
+                synchronized (inputStream) {
+                    inputStream.notifyAll();
+                }
             }
-        }
     }
 
     public void handleMessage(Message message) {
@@ -60,20 +63,20 @@ public class RelayConnector extends AbstractConnector implements Runnable {
         switch (message.type) {
             // handle any logging or special actions
             case DISCONNECT:
-                System.err.printf("Disconnected: %s%n", message);
+                debugPrint(String.format("Disconnected: %s%n", message));
                 sendEvent(message);
                 break;
             case ERROR:
-                System.err.printf("Error message: %s%n", message);
+                debugPrint(String.format("Error message: %s%n", message));
                 sendEvent(message);
                 break;
             case INIT_CONNECTION:
-                System.out.println(message);
+                debugPrintln(message.toString());
                 connectionInfo = (ConnectionMessage) message;
                 sendEvent(message);
                 break;
             case CHAT:
-                System.out.println("Chat message: " + message);
+                debugPrintln("Chat message: " + message);
                 sendEvent(message);
                 break;
             case RESULT:
@@ -83,7 +86,13 @@ public class RelayConnector extends AbstractConnector implements Runnable {
             case CHANGE_INFO:
                 throw new UnsupportedOperationException("Info requests are handled by the server here");
             case MOVE:
-                sendEvent(message);
+                Move move = ((MoveMessage) message).move;
+                MoveResult result = dispatcher.runMove(((MoveMessage) message).move);
+                try {
+                    sendMessage(new MoveResultMessage(move, result));
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
                 break;
             case CONNECTION_REQUEST:
                 System.err.println("Server event received on client");
@@ -94,7 +103,7 @@ public class RelayConnector extends AbstractConnector implements Runnable {
     public Message getMessage() throws IOException {
         try {
             Message message = (Message) inputStream.readObject();
-            System.out.println(message);
+            debugPrintln(message.toString());
             return message;
         } catch (ClassNotFoundException ex) {
             // rethrow as runtime exception, since we control both ends of this connection
@@ -159,7 +168,11 @@ public class RelayConnector extends AbstractConnector implements Runnable {
         // after adding blocking queue, I added a notify() call on inputStream in loop(), so you can use that instead
         // see waitForPartner
         // but for now, I'll use this still
-        return resultQueue.poll();
+        try {
+            return resultQueue.take();
+        } catch (InterruptedException ex) {
+            throw new RuntimeException("Interrupted: " + ex, ex);
+        }
     }
 
     @Override
@@ -178,7 +191,6 @@ public class RelayConnector extends AbstractConnector implements Runnable {
     }
 
     void sendMessage(Message message) throws IOException {
-        System.out.println("Writing message");
         synchronized (outputStream) {
             outputStream.writeObject(message);
         }

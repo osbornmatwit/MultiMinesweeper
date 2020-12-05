@@ -1,6 +1,8 @@
 package multiminesweeper;
 
-public class Move {
+import java.io.Serializable;
+
+public class Move implements Serializable {
     public final int x;
     public final int y;
     public final boolean flag;
