@@ -1,15 +1,20 @@
 package multiminesweeper;
 
 import javafx.application.Application;
+import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.scene.control.TextField;
+import multiminesweeper.ui.LoginWindow;
 
 import javax.swing.text.Position;
 import java.util.ArrayList;
@@ -26,7 +31,7 @@ public class ClientApp extends Application {
 
     //declare grid
     private final Tile[][] grid = new Tile[X_TILES][Y_TILES];
-    private Scene scene;
+    private Scene gameScene;
 
     private Parent createContent() {
         Pane root = new Pane();
@@ -122,7 +127,7 @@ public class ClientApp extends Application {
             //end game
             if(hasBomb){
                 System.out.println("Game Over");
-                scene.setRoot( createContent() ) ;
+                gameScene.setRoot( createContent() ) ;
                 return;
             }
 
@@ -135,7 +140,7 @@ public class ClientApp extends Application {
             }
         }
     }
-
+//TODO: Starting Position
     public class Minefield {
         public Position[] mines;
         public Position startingPosition;
@@ -148,10 +153,11 @@ public class ClientApp extends Application {
 
     @Override
     public void start(Stage stage) {
-        this.scene = new Scene(createContent());
+//        this.gameScene = new Scene(createContent());
+//        stage.setScene(this.scene);
+//        stage.show();
 
-        stage.setScene(this.scene);
-        stage.show();
+        LoginWindow loginWindow = new LoginWindow();
     }
 
     public static void main(String[] args) {
