@@ -1,17 +1,21 @@
 package multiminesweeper.ui;
 
 import javafx.application.Application;
+import javafx.geometry.Orientation;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.SplitPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-import javax.swing.text.Position;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +31,10 @@ public class ClientApp extends Application {
     //declare grid
     private final Tile[][] grid = new Tile[X_TILES][Y_TILES];
     private Scene gameScene;
+
+    public static void main(String[] args) {
+        launch(args);
+    }
 
     private Parent createContent() {
         Pane root = new Pane();
@@ -44,7 +52,7 @@ public class ClientApp extends Application {
             for (int x = 0; x < X_TILES; x++) {
                 Tile tile = grid[x][y];
 
-                if (tile.hasBomb){
+                if (tile.hasBomb) {
                     continue;
                 }
 
@@ -53,8 +61,8 @@ public class ClientApp extends Application {
                     .filter(t -> t.hasBomb)
                     .count();
                 //set numerical values to the tiles
-                if ( bombs > 0 )
-                    tile.text.setText( String.valueOf( bombs ) ) ;
+                if (bombs > 0)
+                    tile.text.setText(String.valueOf(bombs));
             }
         }
 
@@ -84,14 +92,57 @@ public class ClientApp extends Application {
         return neighbors;
     }
 
+    @Override
+    public void start(Stage stage) {
+//        this.gameScene = new Scene(createContent());
+//        stage.setScene(this.gameScene);
+//        stage.show();
+        LoginWindow loginWindow = new LoginWindow();
+        Stage loginStage = new Stage();
+        loginStage.setScene(loginWindow.scene);
+        loginStage.showAndWait();
+        String name = loginWindow.nameField.getText();
+        String password = loginWindow.passField.getText();
+
+        // TODO: Connect to client, while showing a loading screen
+
+        MineGrid grid = new MineGrid(WIDTH / TILE_SIZE, HEIGHT / TILE_SIZE);
+
+        Button finishSetupButton = new Button("Finish Setup");
+        finishSetupButton.setOnAction(event -> {
+            grid.setupMode = false;
+            finishSetupButton.setVisible(false);
+        });
+
+        Button enterSetupButton = new Button("Enter Setup");
+        enterSetupButton.visibleProperty().bind(finishSetupButton.visibleProperty().not());
+        enterSetupButton.setOnAction(event -> {
+            grid.setupMode = true;
+            finishSetupButton.setVisible(true);
+        });
+
+
+        HBox buttonBox = new HBox(finishSetupButton, enterSetupButton);
+
+        ChatBox chatBox = new ChatBox();
+
+        VBox controls = new VBox(buttonBox, chatBox);
+
+        SplitPane splitPane = new SplitPane(grid, controls);
+        splitPane.setOrientation(Orientation.VERTICAL);
+
+        Scene mainScene = new Scene(splitPane, WIDTH, 800);
+        stage.setScene(mainScene);
+        stage.show();
+    }
+
     private class Tile extends StackPane {
         private final int x;
         private final int y;
         private final boolean hasBomb;
-        private boolean isOpen = false;
-
         private final Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE - 2);
         private final Text text = new Text();
+        private boolean isOpen = false;
 
         public Tile(int x, int y, boolean hasBomb) {
             this.x = x;
@@ -101,7 +152,7 @@ public class ClientApp extends Application {
             border.setStroke(Color.LIGHTGRAY);
 
             //set font size
-            this.text.setFont( Font.font( 18 ) ) ;
+            this.text.setFont(Font.font(18));
             // set bombs to have "X"
             text.setText(hasBomb ? "X" : "");
             //text not visible to user
@@ -115,14 +166,14 @@ public class ClientApp extends Application {
             setOnMouseClicked(event -> open());
         }
 
-        public void open(){
+        public void open() {
             if (isOpen)
                 return;
 
             //end game
-            if(hasBomb){
+            if (hasBomb) {
                 System.out.println("Game Over");
-                gameScene.setRoot( createContent() ) ;
+                gameScene.setRoot(createContent());
                 return;
             }
 
@@ -130,33 +181,9 @@ public class ClientApp extends Application {
             text.setVisible(true);
             border.setFill(null);
 
-            if(text.getText().isEmpty()){
+            if (text.getText().isEmpty()) {
                 getNeighbors(this).forEach(Tile::open);
             }
         }
     }
-//TODO: Starting Position
-    public class Minefield {
-        public Position[] mines;
-        public Position startingPosition;
-        // Constructors
-        public Minefield(Position[] mines, Position startingPosition) {
-            this.mines = mines;
-            this.startingPosition = startingPosition;
-        }
-    }
-
-    @Override
-    public void start(Stage stage) {
-//        this.gameScene = new Scene(createContent());
-//        stage.setScene(this.gameScene);
-//        stage.show();
-        GameOverWindow gameOver = new GameOverWindow();
-//        LoginWindow loginWindow = new LoginWindow();
-    }
-
-    public static void main(String[] args) {
-        launch(args);
-    }
-
 }
