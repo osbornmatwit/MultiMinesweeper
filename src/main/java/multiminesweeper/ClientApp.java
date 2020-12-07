@@ -14,6 +14,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.scene.control.TextField;
+import multiminesweeper.ui.GameOverWindow;
 import multiminesweeper.ui.LoginWindow;
 
 import javax.swing.text.Position;
@@ -154,10 +155,10 @@ public class ClientApp extends Application {
     @Override
     public void start(Stage stage) {
 //        this.gameScene = new Scene(createContent());
-//        stage.setScene(this.scene);
+//        stage.setScene(this.gameScene);
 //        stage.show();
-
-        LoginWindow loginWindow = new LoginWindow();
+        GameOverWindow gameOver = new GameOverWindow();
+//        LoginWindow loginWindow = new LoginWindow();
     }
 
     public static void main(String[] args) {
