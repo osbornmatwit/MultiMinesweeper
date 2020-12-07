@@ -35,6 +35,22 @@ class TestClient {
 //        thread.join();
         connector.waitForPartner();
 
+        connector.addEventListener(EventType.CONNECT, event -> {
+            System.out.println("Connected");
+            // remove loading message
+        });
+        Thread partnerRequest = new Thread(connector::waitForPartner);
+        partnerRequest.start();
+        // when this is not true, continue
+        boolean partnerFound = false;
+        while (!partnerFound) {
+            try {
+                partnerRequest.join();
+                partnerFound = true;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
         System.out.println("Connected to partner");
 

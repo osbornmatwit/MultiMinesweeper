@@ -1,21 +1,15 @@
-package multiminesweeper;
+package multiminesweeper.ui;
 
 import javafx.application.Application;
-import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.layout.*;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.scene.control.TextField;
-import multiminesweeper.ui.GameOverWindow;
-import multiminesweeper.ui.LoginWindow;
 
 import javax.swing.text.Position;
 import java.util.ArrayList;

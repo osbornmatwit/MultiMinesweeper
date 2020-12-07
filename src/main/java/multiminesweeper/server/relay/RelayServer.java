@@ -88,7 +88,7 @@ public class RelayServer {
         sendToPair(client1, new ConnectionMessage("test"));
     }
 
-    public boolean findPartner(Client client) throws IOException {
+    public boolean findPartner(Client client, boolean blocking) throws IOException {
         // find a partner that matches client requirements (see Client.filterRequirements)
 
         // Returns an Optional containing nothing or a client matching the requirements
@@ -101,13 +101,16 @@ public class RelayServer {
             pairClients(client, partner);
             return true;
         } else {
+            if (!blocking) {
+                waitingList.remove(client);
+            }
             return false;
         }
     }
 
     public void waitForPartner(Client client) throws IOException {
         waitingList.add(client);
-        findPartner(client);
+        findPartner(client, true);
     }
 
     /**

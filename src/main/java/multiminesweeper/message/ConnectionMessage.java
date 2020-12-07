@@ -10,14 +10,22 @@ public class ConnectionMessage extends Message {
     // a name to show the user who they are connecting to
     public final String name;
 
-    public ConnectionMessage(SocketAddress partnerAddress, String name) {
+    // Used in peer to peer, to determine who is the host
+    public final boolean host;
+
+    public ConnectionMessage(SocketAddress partnerAddress, String name, boolean host) {
         super(MessageType.INIT_CONNECTION);
         this.partnerAddress = partnerAddress;
         this.name = name;
+        this.host = host;
+    }
+
+    public ConnectionMessage(SocketAddress partnerAddress, String name) {
+        this(partnerAddress, name, false);
     }
 
     public ConnectionMessage(String name) {
-        this(null, name);
+        this(null, name, false);
     }
 
     @Override

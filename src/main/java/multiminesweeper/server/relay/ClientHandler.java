@@ -53,8 +53,8 @@ class ClientHandler implements Runnable {
                 client.password = request.password;
                 client.setMetadata("name", request.name);
 
-                boolean result = server.findPartner(client);
-                if (result && !request.blocking) {
+                boolean result = server.findPartner(client, request.blocking);
+                if (!request.blocking) {
                     server.sendResult(client, "connection request", result);
                 } else {
                     // a client that wants to wait for another
