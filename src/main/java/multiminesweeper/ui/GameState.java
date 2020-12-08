@@ -3,15 +3,15 @@ package multiminesweeper.ui;
 import multiminesweeper.Position;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class GameState {
-    HashMap<Position, Boolean> bombLocations = new HashMap<>();
-    HashMap<Position, Boolean> shownLocations = new HashMap<>();
+    public HashSet<Position> bombLocations = new HashSet<>();
+    public HashSet<Position> shownLocations = new HashSet<>();
 
     Position startingLocation;
     public final int width;
@@ -23,6 +23,18 @@ public class GameState {
         startingLocation = new Position(0, 0);
         this.width = width;
         this.height = height;
+    }
+
+    public GameState(Minefield minefield) {
+        this(minefield.width, minefield.height);
+        startingLocation = minefield.startingPosition;
+        for (var mine : minefield.mines) {
+            setBomb(mine, true);
+        }
+    }
+
+    public Minefield transportable() {
+        return new Minefield(this);
     }
 
     public void addEventListener(Consumer<MineEvent> listener) {
@@ -37,6 +49,10 @@ public class GameState {
         for (var listener : listeners) {
             listener.accept(event);
         }
+    }
+
+    public void startGame() {
+        activate(startingLocation);
     }
 
     public void activate(Position pos) {
@@ -58,6 +74,9 @@ public class GameState {
         }
     }
 
+    public void setStartingLocation(Position startingLocation) {
+        this.startingLocation = startingLocation;
+    }
 
     private void setShown(Position pos) {
         setShown(pos, true);
@@ -66,19 +85,15 @@ public class GameState {
     private void setShown(Position pos, boolean value) {
         checkPosition(pos);
         if (value) {
-            bombLocations.put(pos, true);
+            bombLocations.add(pos);
         } else {
             bombLocations.remove(pos);
         }
     }
 
-    private boolean isShown(Position pos) {
-        return shownLocations.getOrDefault(pos, false);
-    }
-
     private void checkPosition(Position pos) {
         if (!isValidPosition(pos)) {
-            throw new IllegalArgumentException("Invalid position in grid");
+            throw new IllegalArgumentException("Invalid position in grid: " + pos.toString());
         }
     }
 
@@ -88,22 +103,23 @@ public class GameState {
 
     public boolean isBomb(Position pos) {
         checkPosition(pos);
-        return bombLocations.getOrDefault(pos, false);
+        return bombLocations.contains(pos);
     }
 
     public void toggleBomb(Position pos) {
+        System.out.println(pos);
         checkPosition(pos);
         if (isBomb(pos)) {
             bombLocations.remove(pos);
         } else {
-            bombLocations.put(pos, true);
+            bombLocations.add(pos);
         }
     }
 
     public void setBomb(Position pos, boolean value) {
         checkPosition(pos);
         if (value) {
-            bombLocations.put(pos, true);
+            bombLocations.add(pos);
         } else {
             bombLocations.remove(pos);
         }
@@ -151,5 +167,27 @@ public class GameState {
         }
 
         return neighbors;
+    }
+
+    public int getNeighboringBombCount(Position pos) {
+        List<Position> neighbors = getNeighbors(pos);
+        int sum = 0;
+        for (var neighbor : neighbors) {
+            if (isBomb(neighbor)) sum += 1;
+        }
+        return sum;
+    }
+
+    public boolean isShown(Position pos) {
+        return shownLocations.contains(pos);
+    }
+
+    // turn the bomb mapping into a
+    public Position[] getBombList() {
+        return bombLocations.toArray(new Position[0]);
+    }
+
+    public void clearEventListeners() {
+        listeners.clear();
     }
 }

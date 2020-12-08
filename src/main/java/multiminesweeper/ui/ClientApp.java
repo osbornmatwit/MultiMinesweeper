@@ -18,6 +18,7 @@ import javafx.stage.Stage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ClientApp extends Application {
 
@@ -110,19 +111,29 @@ public class ClientApp extends Application {
 
         Button finishSetupButton = new Button("Finish Setup");
         finishSetupButton.setOnAction(event -> {
-            grid.setupMode = false;
+            grid.setSetupMode(false);
             finishSetupButton.setVisible(false);
         });
 
         Button enterSetupButton = new Button("Enter Setup");
         enterSetupButton.visibleProperty().bind(finishSetupButton.visibleProperty().not());
         enterSetupButton.setOnAction(event -> {
-            grid.setupMode = true;
+            grid.setSetupMode(true);
             finishSetupButton.setVisible(true);
         });
 
+        Button startGameButton = new Button("Start Game");
+        HBox buttonBox = new HBox(finishSetupButton, enterSetupButton, startGameButton);
+        enterSetupButton.setOnAction(ignored -> {
+            Consumer<MineEvent> listener = event -> {
+                grid.gameState.setBomb(event.position, false);
+                grid.gameState.setStartingLocation(event.position);
+                grid.startGame();
+                buttonBox.setVisible(false);
+            };
+            grid.gameState.addEventListener(listener);
+        });
 
-        HBox buttonBox = new HBox(finishSetupButton, enterSetupButton);
 
         ChatBox chatBox = new ChatBox();
 
@@ -130,6 +141,7 @@ public class ClientApp extends Application {
 
         SplitPane splitPane = new SplitPane(grid, controls);
         splitPane.setOrientation(Orientation.VERTICAL);
+        splitPane.setDividerPosition(0, 10);
 
         Scene mainScene = new Scene(splitPane, WIDTH, 800);
         stage.setScene(mainScene);

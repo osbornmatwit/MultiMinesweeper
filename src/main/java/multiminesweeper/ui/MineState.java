@@ -1,8 +1,16 @@
 package multiminesweeper.ui;
 
 public enum MineState {
-    HIDDEN,
     BLANK,
     NUMBER,
-    MINE
+    MINE;
+
+    public int mineCount = 0;
+
+    MineState() {
+    }
+
+    MineState(int mineCount) {
+        this.mineCount = mineCount;
+    }
 }

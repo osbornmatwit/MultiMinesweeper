@@ -1,5 +1,6 @@
 package multiminesweeper.ui;
 
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
@@ -33,6 +34,10 @@ public class ChatBox extends VBox {
         chatEntry.setOnAction(event -> sendMessage());
         sendButton.setOnAction(event -> sendMessage());
         HBox chatControls = new HBox(5, chatEntry, sendButton);
+        chatControls.setAlignment(Pos.BOTTOM_CENTER);
+        this.setAlignment(Pos.BOTTOM_CENTER);
+        chatPane.setFitToWidth(true);
+        chatPane.setFitToHeight(true);
 
         // Add them to the tree
         this.getChildren().addAll(chatPane, chatControls);
