@@ -53,6 +53,7 @@ public class MultiplayerEvent {
                 break;
             case READY:
                 data = "";
+                break;
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }

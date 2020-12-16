@@ -1,7 +1,7 @@
 package multiminesweeper.ui;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListCell;
@@ -15,10 +15,12 @@ import multiminesweeper.connector.AbstractConnector;
 import multiminesweeper.connector.events.EventType;
 import multiminesweeper.connector.events.MultiplayerEvent;
 
+import java.util.ArrayList;
+
 public class ChatBox extends VBox {
 
-    private final ObservableList<ChatMessage> messages = FXCollections.observableArrayList();
-    private final ListView<ChatMessage> chatMessages = new ListView<>(messages);
+    private final ArrayList<ChatMessage> messages = new ArrayList();
+    private final ListView<ChatMessage> chatMessages = new ListView<>();
     private final TextField chatEntry = new TextField();
     private final AbstractConnector connector;
 
@@ -28,7 +30,7 @@ public class ChatBox extends VBox {
 
 
         // Listing of chat messages
-        chatMessages.setItems(messages);
+        chatMessages.setItems(FXCollections.observableList(messages));
         chatMessages.setCellFactory(listView -> {
             return new ChatMessageCell();
         });
@@ -55,7 +57,9 @@ public class ChatBox extends VBox {
         System.out.println(multiplayerEvent.data);
         String message = multiplayerEvent.data;
         String name = connector.getPartnerName();
-        addOtherMessage(name, message);
+        Platform.runLater(() -> {
+            addOtherMessage(name, message);
+        });
     }
 
     private void sendMessage() {

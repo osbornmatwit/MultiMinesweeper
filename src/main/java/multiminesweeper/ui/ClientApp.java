@@ -12,11 +12,13 @@ import javafx.scene.control.SplitPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import multiminesweeper.Move;
+import multiminesweeper.Position;
 import multiminesweeper.connector.AbstractConnector;
 import multiminesweeper.connector.LocalPeerConnector;
 import multiminesweeper.connector.PeerConnector;
 import multiminesweeper.connector.RelayConnector;
 import multiminesweeper.connector.events.EventType;
+import multiminesweeper.connector.events.MoveResult;
 import multiminesweeper.message.BoardMessage;
 import multiminesweeper.message.ReadyMessage;
 
@@ -174,8 +176,21 @@ public class ClientApp extends Application {
             connector.sendMove(new Move(event.position.x, event.position.y, true, event.newValue));
         });
 
-        connector.addEventListener(EventType.MOVE, event -> {
-            chatBox.addSystemMessage(connector.getPartnerName() + " " + event.data);
+        connector.setMoveHandler(move -> {
+            String result;
+            if (move.flag) {
+                if (move.newValue) {
+                    result = "set flag on ";
+                } else {
+                    result = "removed flag from ";
+                }
+            } else {
+                result = "activated ";
+            }
+            result += new Position(move.x, move.y).toString();
+
+            chatBox.addSystemMessage(connector.getPartnerName() + " " + result);
+            return MoveResult.HIT;
         });
     }
 
