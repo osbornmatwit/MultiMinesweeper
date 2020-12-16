@@ -2,6 +2,7 @@ package multiminesweeper.ui;
 
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
@@ -15,9 +16,9 @@ public class MineCell extends StackPane {
     public MineState state;
     public final Text stateLabel = new Text();
     public boolean shown = false;
-    public Position position;
+    public final Position position;
     public int bombNeighbors = 0;
-    Rectangle border = new Rectangle(TILE_SIZE - 1, TILE_SIZE - 1, Color.LIGHTGREY);
+    public final Rectangle border = new Rectangle(TILE_SIZE - 1, TILE_SIZE - 1, Color.LIGHTGREY);
 
 
     public MineCell(int x, int y) {
@@ -25,11 +26,30 @@ public class MineCell extends StackPane {
         position = new Position(x, y);
         stateLabel.setFont(Font.font(18));
         stateLabel.setVisible(false);
-        border.setStroke(Color.DARKGREY);
+        resetStyle();
         getChildren().addAll(border, stateLabel);
+    }
 
-//        setTranslateX(x * TILE_SIZE);
-//        setTranslateY(y * TILE_SIZE);
+    public void resetStyle() {
+        border.setStroke(Color.DARKGREY);
+        border.setFill(Color.LIGHTGRAY);
+    }
+
+    public void setFill(Paint value) {
+        border.setFill(value);
+    }
+
+    public void showText(String text) {
+        stateLabel.setText(text);
+        stateLabel.setVisible(true);
+    }
+
+    public void showText(int number) {
+        showText(String.valueOf(number));
+    }
+
+    public void hideText() {
+        stateLabel.setVisible(false);
     }
 
     private void showState() {
@@ -42,10 +62,10 @@ public class MineCell extends StackPane {
         switch (state) {
             case BLANK:
                 stateLabel.setVisible(false);
+                border.setFill(Color.LIGHTGRAY);
                 break;
             case NUMBER:
                 stateLabel.setText(String.valueOf(bombNeighbors));
-
                 stateLabel.setVisible(true);
                 break;
             case MINE:
@@ -60,15 +80,5 @@ public class MineCell extends StackPane {
         this.state = newState;
         // instead manually show
 //        showState();
-    }
-
-    public void hide() {
-        shown = false;
-        showState();
-    }
-
-    public void show() {
-        shown = true;
-        showState();
     }
 }

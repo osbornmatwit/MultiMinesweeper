@@ -1,24 +1,26 @@
 package multiminesweeper.ui;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Orientation;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.SplitPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import multiminesweeper.connector.AbstractConnector;
+import multiminesweeper.connector.LocalPeerConnector;
+import multiminesweeper.connector.PeerConnector;
+import multiminesweeper.connector.RelayConnector;
+import multiminesweeper.connector.events.EventType;
+import multiminesweeper.message.BoardMessage;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
+import java.io.IOException;
+
+import static javafx.scene.control.Alert.AlertType;
 
 public class ClientApp extends Application {
 
@@ -26,71 +28,19 @@ public class ClientApp extends Application {
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
 
-    private static final int X_TILES = WIDTH / TILE_SIZE;
-    private static final int Y_TILES = HEIGHT / TILE_SIZE;
+    private static final int X_TILES = 10;
+    private static final int Y_TILES = 10;
 
-    //declare grid
-    private final Tile[][] grid = new Tile[X_TILES][Y_TILES];
-    private Scene gameScene;
+    private AbstractConnector connector;
+    private boolean partnerReady = false;
+    private boolean ready = false;
+    private Button startGameButton;
+    private boolean gameStarted = false;
+
+    private MineGrid grid;
 
     public static void main(String[] args) {
         launch(args);
-    }
-
-    private Parent createContent() {
-        Pane root = new Pane();
-        root.setPrefSize(WIDTH, HEIGHT);
-
-        for (int y = 0; y < Y_TILES; y++) {
-            for (int x = 0; x < X_TILES; x++) {
-                Tile tile = new Tile(x, y, Math.random() < 0.2);
-
-                grid[x][y] = tile;
-                root.getChildren().add(tile);
-            }
-        }
-        for (int y = 0; y < Y_TILES; y++) {
-            for (int x = 0; x < X_TILES; x++) {
-                Tile tile = grid[x][y];
-
-                if (tile.hasBomb) {
-                    continue;
-                }
-
-                // obtain stream of elements and filter them
-                long bombs = getNeighbors(tile).stream()
-                    .filter(t -> t.hasBomb)
-                    .count();
-                //set numerical values to the tiles
-                if (bombs > 0)
-                    tile.text.setText(String.valueOf(bombs));
-            }
-        }
-
-        return root;
-    }
-
-    private List<Tile> getNeighbors(Tile tile) {
-        List<Tile> neighbors = new ArrayList<>();
-
-        int[] points = new int[]{-1, -1, -1, 0, -1, 1, 0, -1, 1, -1, 1, 0, 1, 1};
-
-        for (int i = 0; i < points.length; i++) {
-            int dx = points[i];
-            int dy = points[++i];
-
-            // neighbors X & y coordinate
-            int newX = tile.x + dx;
-            int newY = tile.y + dy;
-
-            //check if new x & y are valid
-            // replace with method... is valid point...
-            if ((newX >= 0 && newX < X_TILES) && (newY >= 0 && newY < Y_TILES)) {
-                neighbors.add(this.grid[newX][newY]);
-            }
-        }
-
-        return neighbors;
     }
 
     @Override
@@ -99,103 +49,158 @@ public class ClientApp extends Application {
 //        stage.setScene(this.gameScene);
 //        stage.show();
         LoginWindow loginWindow = new LoginWindow();
-        Stage loginStage = new Stage();
-        loginStage.setScene(loginWindow.scene);
-        loginStage.showAndWait();
-        String name = loginWindow.nameField.getText();
-        String password = loginWindow.passField.getText();
+        loginWindow.showAndWait();
+        String name = loginWindow.getName();
+        String password = loginWindow.getPassword();
+        String externalAddress = loginWindow.getExternalAddress();
+        ConnectorType connectorType = loginWindow.getConnectorType();
 
-        // TODO: Connect to client, while showing a loading screen
+        try {
+            switch (connectorType) {
+                case RELAY:
+                    connector = new RelayConnector(externalAddress, 8080);
+                    break;
+                case P2P:
+                    connector = new PeerConnector(externalAddress, 8080);
+                    break;
+                case LOCAL_P2P:
+                    connector = new LocalPeerConnector(externalAddress);
+                    break;
+            }
+        } catch (IOException ex) {
+            new Alert(AlertType.ERROR, "Connection error").showAndWait();
+            ex.printStackTrace();
+            Platform.exit();
+        }
 
-        MineGrid grid = new MineGrid(WIDTH / TILE_SIZE, HEIGHT / TILE_SIZE);
+        connector.setName(name);
+        stage.setTitle(name + "'s game.");
 
-        Button finishSetupButton = new Button("Finish Setup");
-        finishSetupButton.setOnAction(event -> {
-            grid.setSetupMode(false);
-            finishSetupButton.setVisible(false);
+        Thread loopThread = new Thread((Runnable) connector);
+        loopThread.start();
+
+        stage.setOnCloseRequest(event -> System.exit(0));
+
+        Alert connectingMessage = new Alert(AlertType.NONE, "Connecting...");
+        connectingMessage.show();
+        connector.addEventListener(EventType.ERROR, event -> {
+            new Alert(AlertType.ERROR, "Error: " + event.data).showAndWait();
+            Platform.exit();
+        });
+        connector.addEventListener(EventType.CONNECT, event -> {
+            String partnerName = event.data;
+            stage.setTitle(name + "(you) vs " + partnerName + "(opponent)");
+            System.out.println("Connected to " + partnerName);
         });
 
-        Button enterSetupButton = new Button("Enter Setup");
-        enterSetupButton.visibleProperty().bind(finishSetupButton.visibleProperty().not());
-        enterSetupButton.setOnAction(event -> {
-            grid.setSetupMode(true);
-            finishSetupButton.setVisible(true);
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                connector.waitForPartner(password);
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            connectingMessage.setResult(ButtonType.OK);
+            connectingMessage.close();
+            stage.setScene(setupGrid());
+            stage.show();
         });
-
-        Button startGameButton = new Button("Start Game");
-        HBox buttonBox = new HBox(finishSetupButton, enterSetupButton, startGameButton);
-        enterSetupButton.setOnAction(ignored -> {
-            Consumer<MineEvent> listener = event -> {
-                grid.gameState.setBomb(event.position, false);
-                grid.gameState.setStartingLocation(event.position);
-                grid.startGame();
-                buttonBox.setVisible(false);
-            };
-            grid.gameState.addEventListener(listener);
-        });
-
-
-        ChatBox chatBox = new ChatBox();
-
-        VBox controls = new VBox(buttonBox, chatBox);
-
-        SplitPane splitPane = new SplitPane(grid, controls);
-        splitPane.setOrientation(Orientation.VERTICAL);
-        splitPane.setDividerPosition(0, 10);
-
-        Scene mainScene = new Scene(splitPane, WIDTH, 800);
-        stage.setScene(mainScene);
-        stage.show();
+        new Thread(task).start();
     }
 
-    private class Tile extends StackPane {
-        private final int x;
-        private final int y;
-        private final boolean hasBomb;
-        private final Rectangle border = new Rectangle(TILE_SIZE - 2, TILE_SIZE - 2);
-        private final Text text = new Text();
-        private boolean isOpen = false;
+    private Scene setupGrid() {
+        grid = new MineGrid(X_TILES, Y_TILES);
 
-        public Tile(int x, int y, boolean hasBomb) {
-            this.x = x;
-            this.y = y;
-            this.hasBomb = hasBomb;
-
-            border.setStroke(Color.LIGHTGRAY);
-
-            //set font size
-            this.text.setFont(Font.font(18));
-            // set bombs to have "X"
-            text.setText(hasBomb ? "X" : "");
-            //text not visible to user
-            text.setVisible(false);
-
-            getChildren().addAll(border, text);
-
-            setTranslateX(x * TILE_SIZE);
-            setTranslateY(y * TILE_SIZE);
-
-            setOnMouseClicked(event -> open());
-        }
-
-        public void open() {
-            if (isOpen)
-                return;
-
-            //end game
-            if (hasBomb) {
-                System.out.println("Game Over");
-                gameScene.setRoot(createContent());
-                return;
+        startGameButton = new Button("Start Game");
+        startGameButton.setOnAction(event -> {
+            grid.setSetupMode(false);
+            startGameButton.setDisable(true);
+            ready = true;
+            if (partnerReady) {
+                gameStarted = true;
+                Platform.runLater(this::startGame);
             }
+        });
 
-            isOpen = true;
-            text.setVisible(true);
-            border.setFill(null);
-
-            if (text.getText().isEmpty()) {
-                getNeighbors(this).forEach(Tile::open);
+        // if this listener runs before the partner is ready, then other code just runs the startGame method,
+        // otherwise, this listener runs it
+        connector.addEventListener(EventType.READY, event -> {
+            partnerReady = true;
+            if (ready) {
+                Platform.runLater(this::startGame);
             }
-        }
+        });
+
+        grid.gameState.setOnGameOver(this::gameOver);
+
+
+        ChatBox chatBox = new ChatBox(connector);
+
+        VBox controls = new VBox(startGameButton, chatBox);
+
+        SplitPane splitPane = new SplitPane(grid, controls);
+
+        connector.addEventListener(EventType.BOARD, event -> {
+            assert event.originalMessage != null;
+            Minefield newBoard = ((BoardMessage) event.originalMessage).state;
+            MineGrid newGrid = new MineGrid(newBoard);
+            newGrid.startGame();
+            Platform.runLater(() -> {
+                splitPane.getItems().set(0, newGrid);
+                grid = newGrid;
+            });
+        });
+        splitPane.setOrientation(Orientation.HORIZONTAL);
+        splitPane.setDividerPosition(0, 0.6);
+
+        connector.setOnClose(() -> {
+            splitPane.getScene().getWindow().hide();
+            new Alert(AlertType.NONE, "Connection closed.", ButtonType.OK).showAndWait();
+            Platform.exit();
+        });
+
+
+        return new Scene(splitPane, 800, 600);
+    }
+
+
+    private void startGame() {
+        if (gameStarted) return;
+        gameStarted = true;
+        connector.sendBoard(grid.gameState.transportable());
+        startGameButton.setVisible(false);
+    }
+
+    private void resetGame() {
+
+    }
+
+    private void gameOver() {
+        connector.gameOver();
+        Alert newGame = new Alert(AlertType.NONE, "New game?");
+        Task<Void> task = new Task<Void>() {
+            @Override
+            protected Void call() {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        };
+        task.setOnSucceeded(event -> {
+            newGame.getButtonTypes().addAll(ButtonType.YES, ButtonType.NO);
+            newGame.showAndWait().ifPresent(type -> {
+                if (ButtonType.YES.equals(type)) {
+                    resetGame();
+                } else if (ButtonType.NO.equals(type)) {
+                    connector.close();
+                    Platform.exit();
+                }
+            });
+        });
     }
 }

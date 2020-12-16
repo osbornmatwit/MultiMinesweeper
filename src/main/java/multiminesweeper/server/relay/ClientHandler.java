@@ -3,6 +3,7 @@ package multiminesweeper.server.relay;
 import multiminesweeper.message.*;
 
 import java.io.IOException;
+import java.net.SocketException;
 
 class ClientHandler implements Runnable {
     public Thread thread;
@@ -21,8 +22,9 @@ class ClientHandler implements Runnable {
     public void run() {
         try {
             loop();
+        } catch (SocketException ex) {
+            server.unexpectedClose(client, "Socket closed");
         } catch (IOException ex) {
-            ex.printStackTrace();
             server.unexpectedClose(client, "Network error");
         } catch (ClassNotFoundException ex) {
             System.err.printf("ClassNotFoundException in client connection: %s%n", ex);

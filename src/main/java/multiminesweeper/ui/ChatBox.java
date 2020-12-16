@@ -7,26 +7,31 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import multiminesweeper.connector.AbstractConnector;
+import multiminesweeper.connector.events.EventType;
+import multiminesweeper.connector.events.MultiplayerEvent;
 
 import java.util.ArrayList;
-import java.util.function.Consumer;
 
 public class ChatBox extends VBox {
 
-
-    private final ArrayList<Consumer<ChatEvent>> listeners = new ArrayList<>();
     private final ArrayList<ChatMessage> messages = new ArrayList<>();
     private final TextField chatEntry = new TextField();
     private final VBox chatMessages = new VBox();
+    private AbstractConnector connector;
 
-    public ChatBox() {
+    public ChatBox(AbstractConnector connector) {
+        this.connector = connector;
+        connector.addEventListener(EventType.CHAT, this::recieveMessage);
+
+
         // Listing of chat messages
         chatMessages.setStyle("-fx-background-color: white");
         chatMessages.setFillWidth(true);
         ScrollPane chatPane = new ScrollPane(chatMessages);
 
         // Form to enter new chat messages
-        chatEntry.setPromptText("Type to communicate with your partner!");
+        chatEntry.setPromptText("Message here...");
         chatEntry.setMaxWidth(10000);
         chatEntry.setMinWidth(200);
         chatEntry.setStyle("-fx-fill-width: true");
@@ -41,25 +46,19 @@ public class ChatBox extends VBox {
 
         // Add them to the tree
         this.getChildren().addAll(chatPane, chatControls);
+        addSystemMessage("Welcome to the game!");
     }
 
-    public void addEventListener(Consumer<ChatEvent> listener) {
-        listeners.add(listener);
-    }
-
-    public void removeEventListener(Consumer<ChatEvent> listener) {
-        listeners.remove(listener);
-    }
-
-    private void triggerEvent(ChatEvent event) {
-        for (var listener : listeners) {
-            listener.accept(event);
-        }
+    private void recieveMessage(MultiplayerEvent multiplayerEvent) {
+        String message = multiplayerEvent.data;
+        String name = connector.getPartnerName();
+        addOtherMessage(name, message);
     }
 
     private void sendMessage() {
         String message = chatEntry.getText();
-        triggerEvent(new ChatEvent(message));
+        chatEntry.clear();
+        connector.sendChat(message);
         addSelfMessage(message);
     }
 
@@ -145,17 +144,6 @@ public class ChatBox extends VBox {
 
             Text element = new Text(message);
             element.setStyle(role.getStyle());
-        }
-    }
-
-    /**
-     * A chat message sent by the local user
-     */
-    public static class ChatEvent {
-        public final String message;
-
-        ChatEvent(String message) {
-            this.message = message;
         }
     }
 }

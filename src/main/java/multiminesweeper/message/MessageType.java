@@ -9,5 +9,8 @@ public enum MessageType {
     RESULT,
     INFO_QUERY,
     CHANGE_INFO,
-    MOVE
+    MOVE,
+    GAME_OVER,
+    BOARD,
+    READY
 }

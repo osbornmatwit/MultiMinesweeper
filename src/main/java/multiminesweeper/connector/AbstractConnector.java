@@ -5,11 +5,10 @@ import multiminesweeper.connector.events.EventDispatcher;
 import multiminesweeper.connector.events.EventType;
 import multiminesweeper.connector.events.MoveResult;
 import multiminesweeper.connector.events.MultiplayerEvent;
-import multiminesweeper.message.InfoChangeMessage;
-import multiminesweeper.message.Message;
-import multiminesweeper.message.MoveMessage;
+import multiminesweeper.message.*;
 import multiminesweeper.message.result.MoveResultMessage;
 import multiminesweeper.message.result.ResultMessage;
+import multiminesweeper.ui.Minefield;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -17,11 +16,16 @@ import java.util.function.Function;
 
 public abstract class AbstractConnector {
     final EventDispatcher dispatcher = new EventDispatcher();
-    private String name;
+    private String name = "";
     public boolean debug = false;
+    private Runnable onClose;
 
     AbstractConnector(String name) {
         this.name = name;
+    }
+
+    public AbstractConnector() {
+
     }
 
     public void debugPrint(String value) {
@@ -43,20 +47,16 @@ public abstract class AbstractConnector {
             return true;
         }
 
-        try {
-            sendMessage(new InfoChangeMessage("name", newName));
-            name = newName;
-            return true;
-        } catch (IOException ex) {
-            return false;
-        }
+        sendMessage(new InfoChangeMessage("name", newName));
+        name = newName;
+        return true;
     }
 
     public String getName() {
         return name;
     }
 
-    public abstract String getPartnerName() throws IOException;
+    public abstract String getPartnerName();
 
     /**
      * Try and find a partner, return true if found, false if not
@@ -67,7 +67,11 @@ public abstract class AbstractConnector {
     /**
      * Block until a partner is available
      */
-    public abstract void waitForPartner() throws IOException;
+    public abstract void waitForPartner(String password);
+
+    public void waitForPartner() {
+        waitForPartner("");
+    }
 
     /**
      * Check if a partner is connected on this connector
@@ -75,7 +79,7 @@ public abstract class AbstractConnector {
      */
     public abstract boolean hasPartner();
 
-    public abstract void sendChat(String message) throws IOException;
+    public abstract void sendChat(String message);
 
 
     /**
@@ -104,12 +108,34 @@ public abstract class AbstractConnector {
         dispatcher.triggerEvent(new MultiplayerEvent(message));
     }
 
-    abstract void sendMessage(Message message) throws IOException;
+    abstract void sendMessage(Message message);
 
-    abstract ResultMessage sendAndWait(Message message) throws IOException;
+    abstract ResultMessage sendAndWait(Message message);
 
     public MoveResult sendMove(Move move) throws IOException {
 
         return ((MoveResultMessage) sendAndWait(new MoveMessage(move))).result;
+    }
+
+    public void sendBoard(Minefield field) {
+        sendMessage(new BoardMessage(field));
+    }
+
+    public void gameOver() {
+        sendMessage(new GameOverMessage());
+    }
+
+    public void close() {
+        if (this.onClose != null) onClose.run();
+    }
+
+    ;
+
+    public void setOnClose(Runnable onClose) {
+        this.onClose = onClose;
+    }
+
+    public Runnable getOnClose() {
+        return onClose;
     }
 }

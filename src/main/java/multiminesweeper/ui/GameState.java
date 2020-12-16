@@ -9,6 +9,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static multiminesweeper.ui.MineState.*;
+
 public class GameState {
     public HashSet<Position> bombLocations = new HashSet<>();
     public HashSet<Position> shownLocations = new HashSet<>();
@@ -17,7 +19,18 @@ public class GameState {
     public final int width;
     public final int height;
 
+
     public final ArrayList<Consumer<MineEvent>> listeners = new ArrayList<>();
+
+    public Runnable gameOverListener;
+
+    public void setOnGameOver(Runnable listener) {
+        gameOverListener = listener;
+    }
+
+    public void removeOnGameOver() {
+        gameOverListener = null;
+    }
 
     public GameState(int width, int height) {
         startingLocation = new Position(0, 0);
@@ -67,11 +80,34 @@ public class GameState {
 
         triggerEvent(new MineEvent(pos, isBomb, bombNeighbors));
 
-        if (isBomb) return;
-
-        for (Position neighbor : neighbors) {
-            activate(neighbor);
+        if (isBomb) {
+            gameOver();
+            return;
         }
+
+        if (bombNeighbors == 0) {
+            for (Position neighbor : neighbors) {
+                activate(neighbor);
+            }
+        }
+    }
+
+    private void gameOver() {
+        if (gameOverListener != null) {
+            gameOverListener.run();
+        }
+    }
+
+    public MineState getState(Position pos) {
+        MineState state;
+        if (isBomb(pos)) {
+            state = MINE;
+        } else if (getNeighboringBombCount(pos) > 0) {
+            state = NUMBER;
+        } else {
+            state = BLANK;
+        }
+        return state;
     }
 
     public void setStartingLocation(Position startingLocation) {
@@ -85,13 +121,13 @@ public class GameState {
     private void setShown(Position pos, boolean value) {
         checkPosition(pos);
         if (value) {
-            bombLocations.add(pos);
+            shownLocations.add(pos);
         } else {
-            bombLocations.remove(pos);
+            shownLocations.remove(pos);
         }
     }
 
-    private void checkPosition(Position pos) {
+    public void checkPosition(Position pos) {
         if (!isValidPosition(pos)) {
             throw new IllegalArgumentException("Invalid position in grid: " + pos.toString());
         }
@@ -134,37 +170,47 @@ public class GameState {
 
         ArrayList<Position> neighbors = new ArrayList<>();
 
-        boolean isOnLeftBorder = (pos.x == 0);
-        boolean isOnRightBorder = (pos.x == width - 1);
-        boolean isOnTopBorder = (pos.y == 0);
-        boolean isOnBottomBorder = (pos.x == height - 1);
-        if (!isOnLeftBorder) {
-            neighbors.add(new Position(pos.x - 1, pos.y));
+        final int[][] neighboringParts = {
+            {-1, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, 0}, {1, 0}, {0, -1}, {0, 1}
+        };
+
+        for (var part : neighboringParts) {
+            Position newPos = new Position(pos.x + part[0], pos.y + part[1]);
+            if (isValidPosition(newPos)) neighbors.add(newPos);
         }
 
-        if (!isOnTopBorder) {
-            neighbors.add(new Position(pos.x, pos.y - 1));
-        }
-
-        if (!isOnRightBorder) {
-            neighbors.add(new Position(pos.x - 1, pos.y - 1));
-        }
-        if (!isOnBottomBorder) {
-            neighbors.add(new Position(pos.x, pos.y + 1));
-        }
-
-        if (!isOnLeftBorder && !isOnTopBorder) {
-            neighbors.add(new Position(pos.x - 1, pos.y - 1));
-        }
-        if (!isOnRightBorder && !isOnTopBorder) {
-            neighbors.add(new Position(pos.x + 1, pos.y - 1));
-        }
-        if (!isOnLeftBorder && !isOnBottomBorder) {
-            neighbors.add(new Position(pos.x - 1, pos.y + 1));
-        }
-        if (!isOnRightBorder && !isOnBottomBorder) {
-            neighbors.add(new Position(pos.x + 1, pos.y + 1));
-        }
+//        boolean isOnLeftBorder = (pos.x == 0);
+//        boolean isOnRightBorder = (pos.x == width - 1);
+//        boolean isOnTopBorder = (pos.y == 0);
+//        boolean isOnBottomBorder = (pos.x == height - 1);
+//        
+//        if (!isOnLeftBorder) {
+//            neighbors.add(new Position(pos.x - 1, pos.y));
+//        }
+//
+//        if (!isOnTopBorder) {
+//            neighbors.add(new Position(pos.x, pos.y - 1));
+//        }
+//
+//        if (!isOnRightBorder) {
+//            neighbors.add(new Position(pos.x - 1, pos.y - 1));
+//        }
+//        if (!isOnBottomBorder) {
+//            neighbors.add(new Position(pos.x, pos.y + 1));
+//        }
+//
+//        if (!isOnLeftBorder && !isOnTopBorder) {
+//            neighbors.add(new Position(pos.x - 1, pos.y - 1));
+//        }
+//        if (!isOnRightBorder && !isOnTopBorder) {
+//            neighbors.add(new Position(pos.x + 1, pos.y - 1));
+//        }
+//        if (!isOnLeftBorder && !isOnBottomBorder) {
+//            neighbors.add(new Position(pos.x - 1, pos.y + 1));
+//        }
+//        if (!isOnRightBorder && !isOnBottomBorder) {
+//            neighbors.add(new Position(pos.x + 1, pos.y + 1));
+//        }
 
         return neighbors;
     }

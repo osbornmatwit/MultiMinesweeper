@@ -28,6 +28,12 @@ public class MultiplayerEvent {
             case CHAT:
                 data = ((StringMessage) message).message;
                 break;
+            case BOARD:
+                data = "Use the original message";
+                break;
+            case GAME_OVER:
+                data = "";
+                break;
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }
@@ -44,6 +50,12 @@ public class MultiplayerEvent {
                 return EventType.DISCONNECT;
             case CHAT:
                 return EventType.CHAT;
+            case GAME_OVER:
+                return EventType.GAME_OVER;
+            case BOARD:
+                return EventType.BOARD;
+            case READY:
+                return EventType.READY;
             default:
                 return null;
         }

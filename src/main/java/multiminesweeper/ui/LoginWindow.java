@@ -1,25 +1,46 @@
 package multiminesweeper.ui;
 
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class LoginWindow {
-    public Scene scene;
+public class LoginWindow extends Stage {
+    private final Scene scene;
     Button loginButton = new Button("Login");
-    public TextField nameField = new TextField();
-    public PasswordField passField = new PasswordField();
+    private final TextField nameField = new TextField();
+    private final PasswordField passField = new PasswordField();
+    private final ChoiceBox<ConnectorType> connectorChoice = new ChoiceBox<>();
+    private final TextField externalAddress = new TextField();
+
+    private final int HEIGHT = 250;
+    private final int WIDTH = 200;
 
     public LoginWindow() {
-        Pane loginRoot = new Pane();
-        loginRoot.setPrefSize(200, 200);
+        connectorChoice.setItems(FXCollections.observableArrayList(ConnectorType.values()));
+        connectorChoice.setValue(ConnectorType.RELAY);
+        loginButton.setOnAction(this::onLoginPress);
+        Label addressLabel = new Label("Server Address");
+        externalAddress.setText("localhost");
+        addressLabel.setLabelFor(externalAddress);
+
+        connectorChoice.setOnAction(event -> {
+            switch (connectorChoice.getValue()) {
+                case LOCAL_P2P:
+                    addressLabel.setText("Partner Address");
+                    break;
+                case P2P:
+                    addressLabel.setText("Coordination Server Address");
+                    break;
+                case RELAY:
+                    addressLabel.setText("Relay Server Address");
+                    break;
+            }
+        });
 
         VBox vBox = new VBox();
 
@@ -29,15 +50,38 @@ public class LoginWindow {
             nameField,
             new Label("Your Password"),
             passField,
+            connectorChoice,
+            addressLabel,
+            externalAddress,
             loginButton);
-        loginRoot.getChildren().addAll(vBox);
-        loginButton.setOnAction(this::onLoginPress);
 
-        scene = new Scene(loginRoot, 200, 200);
+        Pane loginRoot = new Pane();
+        loginRoot.setPrefSize(WIDTH, HEIGHT);
+        loginRoot.getChildren().addAll(vBox);
+
+        scene = new Scene(loginRoot, WIDTH, HEIGHT);
+        this.setScene(scene);
     }
 
     private void onLoginPress(ActionEvent event) {
-        Stage stage = (Stage) scene.getWindow();
-        stage.close();
+        if (nameField.getLength() == 0) return;
+        if (externalAddress.getLength() == 0) externalAddress.setText("localhost");
+        this.close();
+    }
+
+    public String getName() {
+        return nameField.getText();
+    }
+
+    public String getPassword() {
+        return passField.getText();
+    }
+
+    public ConnectorType getConnectorType() {
+        return connectorChoice.getValue();
+    }
+
+    public String getExternalAddress() {
+        return externalAddress.getText();
     }
 }

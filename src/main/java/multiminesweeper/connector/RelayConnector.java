@@ -1,7 +1,9 @@
 package multiminesweeper.connector;
 
 import multiminesweeper.Move;
+import multiminesweeper.connector.events.EventType;
 import multiminesweeper.connector.events.MoveResult;
+import multiminesweeper.connector.events.MultiplayerEvent;
 import multiminesweeper.message.*;
 import multiminesweeper.message.result.BooleanResultMessage;
 import multiminesweeper.message.result.MoveResultMessage;
@@ -30,7 +32,6 @@ public class RelayConnector extends AbstractConnector implements Runnable {
     private ConnectionMessage connectionInfo;
 
     public RelayConnector(String host, int port) throws IOException {
-        super("");
         socket = new Socket(host, port);
         outputStream = new ObjectOutputStream(socket.getOutputStream());
         inputStream = new ObjectInputStream(socket.getInputStream());
@@ -41,20 +42,21 @@ public class RelayConnector extends AbstractConnector implements Runnable {
         try {
             loop();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Closing because of error");
+            close();
         }
     }
 
     @SuppressWarnings("InfiniteLoopStatement")
     public void loop() throws IOException {
-            while (true) {
-                Message message;
-                message = getMessage();
-                handleMessage(message);
-                synchronized (inputStream) {
-                    inputStream.notifyAll();
-                }
+        while (true) {
+            Message message;
+            message = getMessage();
+            handleMessage(message);
+            synchronized (inputStream) {
+                inputStream.notifyAll();
             }
+        }
     }
 
     public void handleMessage(Message message) {
@@ -88,14 +90,18 @@ public class RelayConnector extends AbstractConnector implements Runnable {
             case MOVE:
                 Move move = ((MoveMessage) message).move;
                 MoveResult result = dispatcher.runMove(((MoveMessage) message).move);
-                try {
-                    sendMessage(new MoveResultMessage(move, result));
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                sendMessage(new MoveResultMessage(move, result));
                 break;
             case CONNECTION_REQUEST:
                 System.err.println("Server event received on client");
+                break;
+            case GAME_OVER:
+                debugPrint("Game over");
+                sendEvent(message);
+                break;
+            case BOARD:
+                debugPrint("Board received");
+                sendEvent(message);
                 break;
         }
     }
@@ -113,33 +119,29 @@ public class RelayConnector extends AbstractConnector implements Runnable {
     }
 
     @Override
-    public String getPartnerName() throws IOException {
+    public String getPartnerName() {
         return ((StringResultMessage) sendAndWait(new QueryMessage("name"))).result;
     }
 
     @Override
     public boolean tryFindPartner() {
         if (hasPartner) throw new IllegalStateException("Already have a partner!");
-        try {
-            Message response = sendAndWait(new ConnectionRequestMessage(getName()));
-            if (!(response instanceof BooleanResultMessage)) {
-                // maybe change this to run event handler instead
-                throw new RuntimeException("Didn't get boolean response from client request");
-            }
-            boolean result = ((BooleanResultMessage) response).result;
-            if (result) {
-                hasPartner = true;
-            }
-            return result;
-        } catch (IOException ex) {
-            return false;
+        Message response = sendAndWait(new ConnectionRequestMessage(getName()));
+        if (!(response instanceof BooleanResultMessage)) {
+            // maybe change this to run event handler instead
+            throw new RuntimeException("Didn't get boolean response from client request");
         }
+        boolean result = ((BooleanResultMessage) response).result;
+        if (result) {
+            hasPartner = true;
+        }
+        return result;
     }
 
     @Override
-    public void waitForPartner() {
+    public void waitForPartner(String password) {
         try {
-            ConnectionRequestMessage newConnection = new ConnectionRequestMessage(getName(), "", true);
+            ConnectionRequestMessage newConnection = new ConnectionRequestMessage(getName(), password, true);
             sendMessage(newConnection);
             synchronized (inputStream) {
                 // wait for an message to come in
@@ -148,8 +150,6 @@ public class RelayConnector extends AbstractConnector implements Runnable {
 //                System.out.println(connectionInfo);
                 hasPartner = true;
             }
-        } catch (IOException ex) {
-            close();
         } catch (InterruptedException ex) {
             System.err.println("Wait for partner interrupted");
         }
@@ -159,10 +159,9 @@ public class RelayConnector extends AbstractConnector implements Runnable {
      * Send a message than wait for a response that is of type wantedType
      * @param message The message to send
      * @return A message of the type asked for
-     * @throws IOException If theres an exception in sending the message
      */
     // then wait for a response that matches the wantedType
-    ResultMessage sendAndWait(Message message) throws IOException {
+    ResultMessage sendAndWait(Message message) {
         sendMessage(message);
         // uses blocking queue
         // after adding blocking queue, I added a notify() call on inputStream in loop(), so you can use that instead
@@ -186,17 +185,24 @@ public class RelayConnector extends AbstractConnector implements Runnable {
     }
 
     @Override
-    public void sendChat(String message) throws IOException {
+    public void sendChat(String message) {
         sendMessage(new StringMessage(MessageType.CHAT, message));
     }
 
-    void sendMessage(Message message) throws IOException {
-        synchronized (outputStream) {
-            outputStream.writeObject(message);
+    void sendMessage(Message message) {
+        try {
+            synchronized (outputStream) {
+                outputStream.writeObject(message);
+            }
+        } catch (IOException ex) {
+            dispatcher.triggerEvent(new MultiplayerEvent(EventType.ERROR, "Connection error"));
+            close();
         }
     }
 
+    @Override
     public void close() {
+        super.close();
         closed = true;
         try {
             inputStream.close();
