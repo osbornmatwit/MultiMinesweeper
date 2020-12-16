@@ -10,6 +10,8 @@ Minesweeper is a puzzle video game. It is initially supposed to be a single play
 * Ability to restart game without restarting program
 * Chat
 # Demo Video
+https://www.youtube.com/watch?v=EL0J8Olxjfo
+
 # Contributers
 * Mason Osborn
 * Hector Padilla
