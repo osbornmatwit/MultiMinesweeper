@@ -6,7 +6,7 @@ public enum EventType {
     CHAT,
     ERROR,
     GAME_OVER,
-    BOARD, READY, /*,
+    BOARD, READY, MOVE, /*,
     // these types are handled separately
     MOVE_RESULT,
     MOVE */

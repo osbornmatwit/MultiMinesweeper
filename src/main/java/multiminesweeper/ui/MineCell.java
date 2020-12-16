@@ -52,30 +52,6 @@ public class MineCell extends StackPane {
         stateLabel.setVisible(false);
     }
 
-    private void showState() {
-        if (!shown) {
-            border.setFill(Color.LIGHTGRAY);
-            stateLabel.setVisible(false);
-            return;
-        }
-
-        switch (state) {
-            case BLANK:
-                stateLabel.setVisible(false);
-                border.setFill(Color.LIGHTGRAY);
-                break;
-            case NUMBER:
-                stateLabel.setText(String.valueOf(bombNeighbors));
-                stateLabel.setVisible(true);
-                break;
-            case MINE:
-                stateLabel.setText("X");
-                border.setFill(Color.RED);
-                stateLabel.setVisible(true);
-                break;
-        }
-    }
-
     public void setState(MineState newState) {
         this.state = newState;
         // instead manually show

@@ -42,7 +42,7 @@ public class LocalPeerConnector extends AbstractConnector {
     }
 
     @Override
-    void sendMessage(Message message) {
+    public void sendMessage(Message message) {
 
     }
 

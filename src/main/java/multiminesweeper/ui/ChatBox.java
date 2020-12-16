@@ -1,24 +1,26 @@
 package multiminesweeper.ui;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import multiminesweeper.connector.AbstractConnector;
 import multiminesweeper.connector.events.EventType;
 import multiminesweeper.connector.events.MultiplayerEvent;
 
-import java.util.ArrayList;
-
 public class ChatBox extends VBox {
 
-    private final ArrayList<ChatMessage> messages = new ArrayList<>();
+    private final ObservableList<ChatMessage> messages = FXCollections.observableArrayList();
+    private final ListView<ChatMessage> chatMessages = new ListView<>(messages);
     private final TextField chatEntry = new TextField();
-    private final VBox chatMessages = new VBox();
-    private AbstractConnector connector;
+    private final AbstractConnector connector;
 
     public ChatBox(AbstractConnector connector) {
         this.connector = connector;
@@ -26,9 +28,10 @@ public class ChatBox extends VBox {
 
 
         // Listing of chat messages
-        chatMessages.setStyle("-fx-background-color: white");
-        chatMessages.setFillWidth(true);
-        ScrollPane chatPane = new ScrollPane(chatMessages);
+        chatMessages.setItems(messages);
+        chatMessages.setCellFactory(listView -> {
+            return new ChatMessageCell();
+        });
 
         // Form to enter new chat messages
         chatEntry.setPromptText("Message here...");
@@ -41,15 +44,15 @@ public class ChatBox extends VBox {
         HBox chatControls = new HBox(5, chatEntry, sendButton);
         chatControls.setAlignment(Pos.BOTTOM_CENTER);
         this.setAlignment(Pos.BOTTOM_CENTER);
-        chatPane.setFitToWidth(true);
-        chatPane.setFitToHeight(true);
 
         // Add them to the tree
-        this.getChildren().addAll(chatPane, chatControls);
+        this.getChildren().addAll(chatMessages, chatControls);
+        VBox.setVgrow(chatMessages, Priority.SOMETIMES);
         addSystemMessage("Welcome to the game!");
     }
 
     private void recieveMessage(MultiplayerEvent multiplayerEvent) {
+        System.out.println(multiplayerEvent.data);
         String message = multiplayerEvent.data;
         String name = connector.getPartnerName();
         addOtherMessage(name, message);
@@ -62,30 +65,28 @@ public class ChatBox extends VBox {
         addSelfMessage(message);
     }
 
-    private void reRenderMessages() {
-        chatMessages.getChildren().clear();
-        chatMessages.getChildren().addAll(messages);
-    }
-
     private void addMessage(ChatMessage message) {
         messages.add(message);
-        chatMessages.getChildren().add(message);
     }
 
     public void addSystemMessage(String contents) {
         ChatMessage message = new ChatMessage("SYSTEM", contents, ChatRole.SYSTEM);
+        addMessage(message);
     }
 
     public void addErrorMessage(String contents) {
         ChatMessage message = new ChatMessage("ERROR", contents, ChatRole.ERROR);
+        addMessage(message);
     }
 
     public void addOtherMessage(String name, String contents) {
         ChatMessage message = new ChatMessage(name, contents, ChatRole.OTHER);
+        addMessage(message);
     }
 
     public void addSelfMessage(String contents) {
         ChatMessage message = new ChatMessage(null, contents, ChatRole.SELF);
+        addMessage(message);
     }
 
     private enum ChatRole {
@@ -141,9 +142,17 @@ public class ChatBox extends VBox {
             if (name != null) {
                 message = name + ": " + message;
             }
+            this.setText(message);
+            this.setStyle(role.getStyle());
+        }
+    }
 
-            Text element = new Text(message);
-            element.setStyle(role.getStyle());
+    static class ChatMessageCell extends ListCell<ChatMessage> {
+        @Override
+        protected void updateItem(ChatMessage item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) return;
+            setGraphic(item);
         }
     }
 }

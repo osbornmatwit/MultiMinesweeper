@@ -85,7 +85,8 @@ public class RelayServer {
         pairings.put(client2, client1);
         client1.paired = true;
         client2.paired = true;
-        sendToPair(client1, new ConnectionMessage("test"));
+        client1.sendMessage(new ConnectionMessage(client2.getMetadata("name")));
+        client2.sendMessage(new ConnectionMessage(client1.getMetadata("name")));
     }
 
     public boolean findPartner(Client client, boolean blocking) throws IOException {

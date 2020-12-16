@@ -2,6 +2,7 @@ package multiminesweeper.ui;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import multiminesweeper.Position;
@@ -58,8 +59,13 @@ public class MineGrid extends GridPane {
                     if (this.setupMode) {
                         gameState.toggleBomb(pos);
                         refreshCell(pos);
-                    } else {
+                        gameState.getNeighbors(pos).forEach(neighbor -> refreshCell(pos));
+
+                    } else if (event.getButton() == MouseButton.PRIMARY && !gameState.isFlagged(pos)) {
                         gameState.activate(pos);
+                    } else if (event.getButton() == MouseButton.SECONDARY) {
+                        gameState.toggleFlagged(pos);
+                        refreshCell(pos);
                     }
                 });
             }
@@ -146,8 +152,12 @@ public class MineGrid extends GridPane {
                 cell.setFill(FILL_EXPLODE);
                 cell.showText("X");
             } else if (bombNeighbors > 0) {
-                cell.showText(bombNeighbors);
                 cell.setFill(FILL_SHOWN);
+                cell.showText(bombNeighbors);
+            } else if (gameState.isFlagged(cell.position)) {
+                // \uD83D\uDEA9 =  🚩
+                cell.setFill(FILL_HIDDEN);
+                cell.showText("\uD83D\uDEA9");
             } else {
                 cell.setFill(FILL_SHOWN);
             }

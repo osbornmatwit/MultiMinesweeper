@@ -14,6 +14,7 @@ import static multiminesweeper.ui.MineState.*;
 public class GameState {
     public HashSet<Position> bombLocations = new HashSet<>();
     public HashSet<Position> shownLocations = new HashSet<>();
+    public HashSet<Position> flaggedLocations = new HashSet<>();
 
     Position startingLocation;
     public final int width;
@@ -21,6 +22,7 @@ public class GameState {
 
 
     public final ArrayList<Consumer<MineEvent>> listeners = new ArrayList<>();
+    public final ArrayList<Consumer<FlagEvent>> flagListeners = new ArrayList<>();
 
     public Runnable gameOverListener;
 
@@ -56,6 +58,38 @@ public class GameState {
 
     public void removeEventListener(Consumer<MineEvent> listener) {
         listeners.remove(listener);
+    }
+
+    public void addFlagListener(Consumer<FlagEvent> listener) {
+        flagListeners.add(listener);
+    }
+
+    public void removeFlagListener(Consumer<FlagEvent> listener) {
+        flagListeners.remove(listener);
+    }
+
+    public void setFlagged(Position pos) {
+        setFlagged(pos, true);
+    }
+
+    public void setFlagged(Position pos, boolean value) {
+        boolean oldValue = isFlagged(pos);
+        if (value) {
+            flaggedLocations.add(pos);
+        } else {
+            flaggedLocations.remove(pos);
+        }
+        for (var listener : flagListeners) {
+            listener.accept(new FlagEvent(pos, value, oldValue));
+        }
+    }
+
+    public void toggleFlagged(Position pos) {
+        setFlagged(pos, !isFlagged(pos));
+    }
+
+    public boolean isFlagged(Position pos) {
+        return flaggedLocations.contains(pos);
     }
 
     private void triggerEvent(MineEvent event) {
@@ -143,6 +177,7 @@ public class GameState {
     }
 
     public void toggleBomb(Position pos) {
+        if (startingLocation.equals(pos)) return;
         System.out.println(pos);
         checkPosition(pos);
         if (isBomb(pos)) {

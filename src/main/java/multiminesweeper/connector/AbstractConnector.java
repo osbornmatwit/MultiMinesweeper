@@ -10,7 +10,6 @@ import multiminesweeper.message.result.MoveResultMessage;
 import multiminesweeper.message.result.ResultMessage;
 import multiminesweeper.ui.Minefield;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -108,12 +107,11 @@ public abstract class AbstractConnector {
         dispatcher.triggerEvent(new MultiplayerEvent(message));
     }
 
-    abstract void sendMessage(Message message);
+    public abstract void sendMessage(Message message);
 
     abstract ResultMessage sendAndWait(Message message);
 
-    public MoveResult sendMove(Move move) throws IOException {
-
+    public MoveResult sendMove(Move move) {
         return ((MoveResultMessage) sendAndWait(new MoveMessage(move))).result;
     }
 
@@ -128,8 +126,6 @@ public abstract class AbstractConnector {
     public void close() {
         if (this.onClose != null) onClose.run();
     }
-
-    ;
 
     public void setOnClose(Runnable onClose) {
         this.onClose = onClose;

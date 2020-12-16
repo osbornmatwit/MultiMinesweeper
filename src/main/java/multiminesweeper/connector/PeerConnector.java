@@ -40,7 +40,7 @@ public class PeerConnector extends AbstractConnector {
     }
 
     @Override
-    void sendMessage(Message message) {
+    public void sendMessage(Message message) {
 
     }
 

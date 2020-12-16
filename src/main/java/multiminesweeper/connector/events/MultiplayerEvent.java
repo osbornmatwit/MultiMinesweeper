@@ -1,5 +1,7 @@
 package multiminesweeper.connector.events;
 
+import multiminesweeper.Move;
+import multiminesweeper.Position;
 import multiminesweeper.message.*;
 
 public class MultiplayerEvent {
@@ -34,6 +36,23 @@ public class MultiplayerEvent {
             case GAME_OVER:
                 data = "";
                 break;
+            case MOVE:
+                Move move = ((MoveMessage) message).move;
+                String result = "";
+
+                if (move.flag) {
+                    if (move.newValue) {
+                        result = "set flag on ";
+                    } else {
+                        result = "removed flag from ";
+                    }
+                } else {
+                    result = "activated ";
+                }
+                data = result + new Position(move.x, move.y).toString();
+                break;
+            case READY:
+                data = "";
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }

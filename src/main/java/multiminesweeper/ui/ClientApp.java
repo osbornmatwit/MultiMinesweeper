@@ -11,22 +11,20 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import multiminesweeper.Move;
 import multiminesweeper.connector.AbstractConnector;
 import multiminesweeper.connector.LocalPeerConnector;
 import multiminesweeper.connector.PeerConnector;
 import multiminesweeper.connector.RelayConnector;
 import multiminesweeper.connector.events.EventType;
 import multiminesweeper.message.BoardMessage;
+import multiminesweeper.message.ReadyMessage;
 
 import java.io.IOException;
 
 import static javafx.scene.control.Alert.AlertType;
 
 public class ClientApp extends Application {
-
-    private static final int TILE_SIZE = 40;
-    private static final int WIDTH = 800;
-    private static final int HEIGHT = 600;
 
     private static final int X_TILES = 10;
     private static final int Y_TILES = 10;
@@ -38,6 +36,7 @@ public class ClientApp extends Application {
     private boolean gameStarted = false;
 
     private MineGrid grid;
+    private ChatBox chatBox;
 
     public static void main(String[] args) {
         launch(args);
@@ -45,9 +44,6 @@ public class ClientApp extends Application {
 
     @Override
     public void start(Stage stage) {
-//        this.gameScene = new Scene(createContent());
-//        stage.setScene(this.gameScene);
-//        stage.show();
         LoginWindow loginWindow = new LoginWindow();
         loginWindow.showAndWait();
         String name = loginWindow.getName();
@@ -95,7 +91,7 @@ public class ClientApp extends Application {
 
         Task<Void> task = new Task<>() {
             @Override
-            protected Void call() throws Exception {
+            protected Void call() {
                 connector.waitForPartner(password);
                 return null;
             }
@@ -117,7 +113,9 @@ public class ClientApp extends Application {
         startGameButton.setOnAction(event -> {
             grid.setSetupMode(false);
             startGameButton.setDisable(true);
+            grid.setClicksDisabled(true);
             ready = true;
+            connector.sendMessage(new ReadyMessage());
             if (partnerReady) {
                 gameStarted = true;
                 Platform.runLater(this::startGame);
@@ -136,7 +134,7 @@ public class ClientApp extends Application {
         grid.gameState.setOnGameOver(this::gameOver);
 
 
-        ChatBox chatBox = new ChatBox(connector);
+        chatBox = new ChatBox(connector);
 
         VBox controls = new VBox(startGameButton, chatBox);
 
@@ -150,25 +148,41 @@ public class ClientApp extends Application {
             Platform.runLater(() -> {
                 splitPane.getItems().set(0, newGrid);
                 grid = newGrid;
+                gameStarted();
             });
         });
         splitPane.setOrientation(Orientation.HORIZONTAL);
         splitPane.setDividerPosition(0, 0.6);
 
         connector.setOnClose(() -> {
-            splitPane.getScene().getWindow().hide();
             new Alert(AlertType.NONE, "Connection closed.", ButtonType.OK).showAndWait();
-            Platform.exit();
+            Platform.runLater(() -> {
+                splitPane.getScene().getWindow().hide();
+                Platform.exit();
+            });
         });
-
 
         return new Scene(splitPane, 800, 600);
     }
 
+    // stuff to do after the game starts
+    private void gameStarted() {
+        grid.gameState.addEventListener(event -> {
+            connector.sendMove(new Move(event.position.x, event.position.y, false, false));
+        });
+        grid.gameState.addFlagListener(event -> {
+            connector.sendMove(new Move(event.position.x, event.position.y, true, event.newValue));
+        });
+
+        connector.addEventListener(EventType.MOVE, event -> {
+            chatBox.addSystemMessage(connector.getPartnerName() + " " + event.data);
+        });
+    }
 
     private void startGame() {
         if (gameStarted) return;
         gameStarted = true;
+        grid.setClicksDisabled(false);
         connector.sendBoard(grid.gameState.transportable());
         startGameButton.setVisible(false);
     }
@@ -177,10 +191,9 @@ public class ClientApp extends Application {
 
     }
 
-    private void gameOver() {
-        connector.gameOver();
+    private void askNewGame() {
         Alert newGame = new Alert(AlertType.NONE, "New game?");
-        Task<Void> task = new Task<Void>() {
+        Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
                 try {
@@ -202,5 +215,12 @@ public class ClientApp extends Application {
                 }
             });
         });
+        new Thread(task).start();
+    }
+
+    private void gameOver() {
+        connector.gameOver();
+        grid.setClicksDisabled(true);
+        askNewGame();
     }
 }

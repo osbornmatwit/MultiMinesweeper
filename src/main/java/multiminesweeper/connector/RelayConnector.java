@@ -8,7 +8,6 @@ import multiminesweeper.message.*;
 import multiminesweeper.message.result.BooleanResultMessage;
 import multiminesweeper.message.result.MoveResultMessage;
 import multiminesweeper.message.result.ResultMessage;
-import multiminesweeper.message.result.StringResultMessage;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -103,6 +102,9 @@ public class RelayConnector extends AbstractConnector implements Runnable {
                 debugPrint("Board received");
                 sendEvent(message);
                 break;
+            case READY:
+                debugPrint("Partner ready to play");
+                sendEvent(message);
         }
     }
 
@@ -120,7 +122,8 @@ public class RelayConnector extends AbstractConnector implements Runnable {
 
     @Override
     public String getPartnerName() {
-        return ((StringResultMessage) sendAndWait(new QueryMessage("name"))).result;
+        return connectionInfo.name;
+//        return ((StringResultMessage) sendAndWait(new QueryMessage("name"))).result;
     }
 
     @Override
@@ -189,7 +192,7 @@ public class RelayConnector extends AbstractConnector implements Runnable {
         sendMessage(new StringMessage(MessageType.CHAT, message));
     }
 
-    void sendMessage(Message message) {
+    public void sendMessage(Message message) {
         try {
             synchronized (outputStream) {
                 outputStream.writeObject(message);

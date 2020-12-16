@@ -2,6 +2,7 @@ package multiminesweeper.ui;
 
 public enum MineState {
     BLANK,
+    FLAG,
     NUMBER,
     MINE;
 

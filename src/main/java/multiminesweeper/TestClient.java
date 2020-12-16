@@ -84,7 +84,7 @@ class TestClient {
         boolean flag = scanner.nextBoolean();
 
         System.out.println("Sending move...");
-        var result = connector.sendMove(new Move(x, y, flag));
+        var result = connector.sendMove(new Move(x, y, flag, true));
         System.out.printf("Move result: %s%n", result);
 
     }
